@@ -46,10 +46,7 @@
       "expo-router",
       "expo-web-browser",
       [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.your-google-client-id"
-        }
+        "@react-native-google-signin/google-signin"
       ]
     ],
     "scheme": "flowfocus",
@@ -57,10 +54,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "your-eas-project-id"
-      }
+      "router": {}
     }
   }
 }

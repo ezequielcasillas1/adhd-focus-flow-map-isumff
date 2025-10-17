@@ -333,19 +333,10 @@ export default function SignInScreen() {
           sessionId: data.session.access_token?.substring(0, 20) + '...'
         });
         
-        Alert.alert(
-          'Welcome Back!',
-          'You have successfully signed in.',
-          [
-            {
-              text: 'Continue',
-              onPress: () => {
-                // The AuthContext will handle navigation automatically
-                console.log('SignIn: User confirmed success, AuthContext will handle navigation');
-              }
-            }
-          ]
-        );
+        // Small delay to ensure auth context updates
+        setTimeout(() => {
+          router.replace('/(tabs)/(home)/');
+        }, 100);
       } else {
         console.warn('SignIn: Unexpected response - no session returned:', data);
         Alert.alert(
@@ -431,11 +422,7 @@ export default function SignInScreen() {
           Alert.alert('Google Sign In Failed', error.message);
         } else {
           console.log('Google sign in successful:', data);
-          Alert.alert(
-            'Welcome!',
-            'You have successfully signed in with Google.',
-            [{ text: 'Continue' }]
-          );
+          router.replace('/(tabs)/(home)/');
         }
       } else {
         throw new Error('No ID token present!');

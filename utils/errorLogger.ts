@@ -1,4 +1,3 @@
-
 // Global error logging for runtime errors
 
 import { Platform } from "react-native";
@@ -94,55 +93,6 @@ const getCallerInfo = (): string => {
   }
 
   return '';
-};
-
-// Export logging functions
-export const logError = (...args: any[]) => {
-  const message = args.map(arg => 
-    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-  ).join(' ');
-  
-  console.error('🔥 ERROR:', message);
-  sendErrorToParent('error', 'Error', message);
-};
-
-export const logWarning = (...args: any[]) => {
-  const message = args.map(arg => 
-    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-  ).join(' ');
-  
-  console.warn('⚠️ WARNING:', message);
-  sendErrorToParent('warn', 'Warning', message);
-};
-
-export const logInfo = (...args: any[]) => {
-  const message = args.map(arg => 
-    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-  ).join(' ');
-  
-  console.log('ℹ️ INFO:', message);
-  // Optionally send info to parent (commented out to reduce noise)
-  // sendErrorToParent('info', 'Info', message);
-};
-
-export const addBreadcrumb = (message: string, data?: any) => {
-  console.log('🍞 BREADCRUMB:', message, data || '');
-};
-
-export const reportError = (error: Error, context?: any) => {
-  console.error('📢 REPORT ERROR:', error.message, context || '');
-  sendErrorToParent('error', 'Reported Error', {
-    message: error.message,
-    stack: error.stack,
-    context
-  });
-};
-
-export const startTransaction = (name: string) => {
-  console.log('🚀 START TRANSACTION:', name);
-  return {
-    finish: () => console.log('✅ FINISH TRANSACTION:', name)
-  };
 };
 
 export const setupErrorLogging = () => {

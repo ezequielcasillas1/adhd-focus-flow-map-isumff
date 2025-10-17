@@ -237,66 +237,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
-  recentSessionContainer: {
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
-    borderWidth: 2,
-    borderColor: colors.metallicSilver,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    boxShadow: '0px 6px 16px rgba(192, 192, 192, 0.3)',
-    elevation: 8,
-  },
-  recentSessionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  recentSessionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: colors.metallicSilver,
-  },
-  recentSessionContent: {
-    flex: 1,
-  },
-  recentSessionTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  recentSessionTime: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  recentSessionRating: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: colors.highlight,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.metallicGold,
-  },
-  recentSessionRatingText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
 });
 
 export default function HomeScreen() {
@@ -312,14 +252,13 @@ export default function HomeScreen() {
   };
 
   const handleViewStats = () => {
-    router.push('/(tabs)/stats');
+    // Navigate to stats screen when implemented
+    Alert.alert('Coming Soon', 'Stats screen will be available soon!');
   };
 
-  const handleMasterSoundToggle = async () => {
-    const newMasterState = !state.sounds.master;
-    await actions.updateSounds({ master: newMasterState });
-    
-    if (newMasterState) {
+  const handleMasterSoundToggle = () => {
+    actions.updateSounds({ master: !state.sounds.master });
+    if (!state.sounds.master) {
       soundService.initialize();
     } else {
       soundService.forceStopAll();
@@ -328,15 +267,7 @@ export default function HomeScreen() {
 
   const handleMoodSelect = (mood: number) => {
     setSelectedMood(mood);
-    // Update feedback state
-    const updatedFeedback = {
-      ...state.feedback,
-      currentFeedback: {
-        ...state.feedback.currentFeedback,
-        mood: mood,
-      },
-    };
-    // You could dispatch this to update the state if needed
+    // You can add logic here to save the mood selection
     console.log('Mood selected:', mood);
   };
 
@@ -358,48 +289,11 @@ export default function HomeScreen() {
     }
   };
 
-  const formatTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
-    return `${mins}m`;
-  };
-
-  const getWeeklyProgressPercentage = (): number => {
-    if (!state.analytics?.weeklyProgress) return 0;
-    const totalMinutes = state.analytics.weeklyProgress.reduce((sum, minutes) => sum + minutes, 0);
-    const targetMinutes = 7 * 25; // 7 days * 25 minutes target per day
-    return Math.min((totalMinutes / targetMinutes) * 100, 100);
-  };
-
-  const getRandomAISuggestion = (): string => {
-    const suggestions = [
-      'Try the Pomodoro technique: 25 minutes focused work, 5 minute break',
-      'Consider adjusting your session length based on your energy levels',
-      'Deep breathing exercises can help improve focus before sessions',
-      'A clean, organized workspace can boost concentration',
-      'Stay hydrated - dehydration can affect cognitive performance',
-      'Natural light or a well-lit environment helps maintain alertness',
-      'Try background sounds that match your current mood and task',
-    ];
-    return suggestions[Math.floor(Math.random() * suggestions.length)];
-  };
-
-  if (!state.isInitialized) {
-    return (
-      <View style={styles.container}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <View style={[styles.scrollContainer, { justifyContent: 'center', alignItems: 'center', flex: 1 }]}>
-            <Text style={styles.loadingText}>
-              {state.isLoading ? 'Loading your focus data...' : 'Initializing...'}
-            </Text>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
+  const renderHeaderRight = () => (
+    <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}>
+      <IconSymbol name="person.circle" size={28} color={colors.text} />
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
@@ -469,47 +363,20 @@ export default function HomeScreen() {
           <View style={styles.progressContainer}>
             <View style={styles.progressHeader}>
               <Text style={styles.sectionTitle}>Weekly Progress</Text>
-              <Text style={styles.streakText}>🔥 {state.analytics?.currentStreak || 0} day streak</Text>
+              <Text style={styles.streakText}>🔥 {state.progress.currentStreak} day streak</Text>
             </View>
             <View style={styles.progressBar}>
               <View 
                 style={[
                   styles.progressFill, 
-                  { width: `${getWeeklyProgressPercentage()}%` }
+                  { width: `${Math.min((state.progress.weeklyProgress / 7) * 100, 100)}%` }
                 ]} 
               />
             </View>
             <Text style={styles.progressLabel}>
-              {formatTime(state.analytics?.weeklyProgress?.reduce((sum, minutes) => sum + minutes, 0) || 0)} this week
+              {state.progress.weeklyProgress}/7 sessions this week
             </Text>
           </View>
-
-          {/* Recent Sessions */}
-          {state.history && state.history.length > 0 && (
-            <View style={styles.recentSessionContainer}>
-              <Text style={styles.sectionTitle}>Recent Sessions</Text>
-              {state.history.slice(0, 3).map((session, index) => (
-                <View key={`session-${session.id || index}`} style={styles.recentSessionItem}>
-                  <View style={styles.recentSessionIcon}>
-                    <IconSymbol name="play.circle.fill" color={colors.primary} size={16} />
-                  </View>
-                  <View style={styles.recentSessionContent}>
-                    <Text style={styles.recentSessionTitle}>
-                      {session.mode === 'speed' ? 'Speed' : 'Locked'} Session - {formatTime(Math.round(session.duration / 60))}
-                    </Text>
-                    <Text style={styles.recentSessionTime}>
-                      {new Date(session.date).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <View style={styles.recentSessionRating}>
-                    <Text style={styles.recentSessionRatingText}>
-                      {session.efficiency ? `${session.efficiency}/100` : 'N/A'}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
 
           {/* Mood Selection */}
           <View style={styles.moodContainer}>
@@ -541,10 +408,12 @@ export default function HomeScreen() {
           </View>
 
           {/* AI Suggestion */}
-          <View style={styles.aiSuggestion}>
-            <Text style={styles.aiTitle}>💡 Focus Tip</Text>
-            <Text style={styles.aiText}>{getRandomAISuggestion()}</Text>
-          </View>
+          {state.feedback.aiSuggestions && (
+            <View style={styles.aiSuggestion}>
+              <Text style={styles.aiTitle}>💡 Focus Tip</Text>
+              <Text style={styles.aiText}>{state.feedback.aiSuggestions}</Text>
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </View>

@@ -18,7 +18,7 @@ import { useAppContext } from "@/src/context/AppContext";
 import { useAuth } from "@/src/context/AuthContext";
 
 export default function ProfileScreen() {
-  const { state, actions } = useAppContext();
+  const { state } = useAppContext();
   const { user, signOut } = useAuth();
 
   const formatTime = (minutes: number): string => {
@@ -31,16 +31,29 @@ export default function ProfileScreen() {
   };
 
   const getAverageSessionLength = (): number => {
-    return state.analytics?.averageSessionLength || 0;
+    if (!state?.history || state.history.length === 0) return 0;
+    const totalTime = state.history.reduce((sum, session) => sum + session.duration, 0);
+    return Math.round(totalTime / state.history.length / 60); // Convert to minutes
   };
 
   const getBestStreak = (): number => {
-    return state.analytics?.bestStreak || 0;
+    // This would calculate the best streak from session history
+    // For now, return current streak as placeholder
+    return Math.max(state?.progress?.currentStreak || 0, 7); // Minimum 7 for demo
   };
 
   const getThisWeekTotal = (): number => {
-    if (!state.analytics?.weeklyProgress) return 0;
-    return state.analytics.weeklyProgress.reduce((sum, minutes) => sum + minutes, 0);
+    // Calculate total minutes this week from session history
+    if (!state?.history || state.history.length === 0) return 0;
+    
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    const thisWeekSessions = state.history.filter(session => 
+      new Date(session.date) >= oneWeekAgo
+    );
+    
+    return Math.round(thisWeekSessions.reduce((sum, session) => sum + session.duration, 0) / 60);
   };
 
   const handleSignOut = async (): Promise<void> => {
@@ -74,19 +87,8 @@ export default function ProfileScreen() {
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const handleRefreshData = async () => {
-    try {
-      await actions.refreshAnalytics();
-      await actions.loadRecentHistory();
-      Alert.alert('Success', 'Profile data refreshed!');
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-      Alert.alert('Error', 'Failed to refresh data. Please try again.');
-    }
-  };
-
   // Add safety check for state
-  if (!state.isInitialized) {
+  if (!state) {
     return (
       <SafeAreaView style={[commonStyles.safeArea]} edges={['top']}>
         <View style={[commonStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -104,11 +106,6 @@ export default function ProfileScreen() {
             title: "Profile",
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.text,
-            headerRight: () => (
-              <TouchableOpacity onPress={handleRefreshData}>
-                <IconSymbol name="arrow.clockwise" size={20} color={colors.text} />
-              </TouchableOpacity>
-            ),
           }}
         />
       )}
@@ -134,9 +131,6 @@ export default function ProfileScreen() {
           <Text style={styles.userEmail}>
             {user?.email || state.user?.email || 'user@example.com'}
           </Text>
-          <Text style={styles.memberSince}>
-            Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'recently'}
-          </Text>
         </View>
 
         {/* Quick Stats */}
@@ -148,7 +142,7 @@ export default function ProfileScreen() {
               <View style={styles.statIcon}>
                 <IconSymbol name="clock.fill" color={colors.primary} size={24} />
               </View>
-              <Text style={styles.statValue}>{state.analytics?.totalSessions || 0}</Text>
+              <Text style={styles.statValue}>{state.progress?.totalSessions || 0}</Text>
               <Text style={styles.statLabel}>Total Sessions</Text>
             </View>
             
@@ -156,7 +150,7 @@ export default function ProfileScreen() {
               <View style={styles.statIcon}>
                 <IconSymbol name="timer" color={colors.secondary} size={24} />
               </View>
-              <Text style={styles.statValue}>{formatTime(state.analytics?.totalTime || 0)}</Text>
+              <Text style={styles.statValue}>{formatTime(state.progress?.totalTime || 0)}</Text>
               <Text style={styles.statLabel}>Total Time</Text>
             </View>
             
@@ -164,7 +158,7 @@ export default function ProfileScreen() {
               <View style={styles.statIcon}>
                 <IconSymbol name="flame.fill" color={colors.accent} size={24} />
               </View>
-              <Text style={styles.statValue}>{state.analytics?.currentStreak || 0}</Text>
+              <Text style={styles.statValue}>{state.progress?.currentStreak || 0}</Text>
               <Text style={styles.statLabel}>Current Streak</Text>
             </View>
           </View>
@@ -206,65 +200,12 @@ export default function ProfileScreen() {
           
           <View style={styles.detailedStat}>
             <View style={styles.detailedStatIcon}>
-              <IconSymbol name="gauge.high" color={colors.primary} size={20} />
+              <IconSymbol name="star.fill" color={colors.primary} size={20} />
             </View>
             <View style={styles.detailedStatContent}>
-              <Text style={styles.detailedStatLabel}>Average Efficiency</Text>
+              <Text style={styles.detailedStatLabel}>Average Rating</Text>
               <Text style={styles.detailedStatValue}>
-                {state.analytics?.averageEfficiency ? `${state.analytics.averageEfficiency}/100` : 'N/A'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.detailedStat}>
-            <View style={styles.detailedStatIcon}>
-              <IconSymbol name="face.smiling" color={colors.secondary} size={20} />
-            </View>
-            <View style={styles.detailedStatContent}>
-              <Text style={styles.detailedStatLabel}>Average Mood</Text>
-              <Text style={styles.detailedStatValue}>
-                {state.analytics?.averageMood ? `${state.analytics.averageMood}/5` : 'N/A'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.detailedStat}>
-            <View style={styles.detailedStatIcon}>
-              <IconSymbol name="target" color={colors.accent} size={20} />
-            </View>
-            <View style={styles.detailedStatContent}>
-              <Text style={styles.detailedStatLabel}>Completion Rate</Text>
-              <Text style={styles.detailedStatValue}>
-                {state.analytics?.completionRate || 100}%
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Mode Preference */}
-        <View style={[commonStyles.bronzeCard]}>
-          <Text style={commonStyles.subtitle}>Session Preferences</Text>
-          
-          <View style={styles.preferenceItem}>
-            <View style={styles.preferenceIcon}>
-              <IconSymbol name="bolt.fill" color={colors.primary} size={20} />
-            </View>
-            <View style={styles.preferenceContent}>
-              <Text style={styles.preferenceLabel}>Speed Mode</Text>
-              <Text style={styles.preferenceValue}>
-                {state.analytics?.modePreference.speed || 50}% of sessions
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.preferenceItem}>
-            <View style={styles.preferenceIcon}>
-              <IconSymbol name="lock.fill" color={colors.secondary} size={20} />
-            </View>
-            <View style={styles.preferenceContent}>
-              <Text style={styles.preferenceLabel}>Locked Mode</Text>
-              <Text style={styles.preferenceValue}>
-                {state.analytics?.modePreference.locked || 50}% of sessions
+                {state.progress?.averageRating ? `${state.progress.averageRating.toFixed(1)}/5` : 'N/A'}
               </Text>
             </View>
           </View>
@@ -276,21 +217,17 @@ export default function ProfileScreen() {
           
           {state.history && state.history.length > 0 ? (
             <View style={styles.recentActivity}>
-              {state.history.slice(0, 5).map((session, index) => (
+              {state.history.slice(-3).reverse().map((session, index) => (
                 <View key={`session-${session.id || index}`} style={styles.activityItem}>
                   <View style={styles.activityIcon}>
-                    <IconSymbol 
-                      name={session.mode === 'speed' ? 'bolt.fill' : 'lock.fill'} 
-                      color={colors.primary} 
-                      size={16} 
-                    />
+                    <IconSymbol name="play.circle.fill" color={colors.primary} size={16} />
                   </View>
                   <View style={styles.activityContent}>
                     <Text style={styles.activityTitle}>
-                      {session.mode === 'speed' ? 'Speed' : 'Locked'} Session - {formatTime(Math.round(session.duration / 60))}
+                      Focus Session - {formatTime(Math.round(session.duration / 60))}
                     </Text>
                     <Text style={styles.activityTime}>
-                      {new Date(session.date).toLocaleDateString()} at {new Date(session.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(session.date).toLocaleDateString()}
                     </Text>
                   </View>
                   <View style={styles.activityRating}>
@@ -314,14 +251,6 @@ export default function ProfileScreen() {
         <View style={[commonStyles.goldCard]}>
           <Text style={commonStyles.subtitle}>Account</Text>
           
-          <TouchableOpacity 
-            style={[commonStyles.metallicButton, commonStyles.silverButton, styles.refreshButton]}
-            onPress={handleRefreshData}
-          >
-            <IconSymbol name="arrow.clockwise" color={colors.text} size={20} />
-            <Text style={styles.refreshButtonText}>Refresh Data</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity 
             style={[commonStyles.metallicButton, commonStyles.bronzeButton, styles.signOutButton]}
             onPress={handleSignOut}
@@ -381,12 +310,6 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 16,
     color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  memberSince: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -473,37 +396,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
-  preferenceItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.metallicBronze,
-  },
-  preferenceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: colors.metallicBronze,
-  },
-  preferenceContent: {
-    flex: 1,
-  },
-  preferenceLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  preferenceValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
   recentActivity: {
     marginTop: 16,
   },
@@ -578,23 +470,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    marginBottom: 12,
-    gap: 8,
-  },
-  refreshButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 16,
     gap: 8,
   },
   signOutButtonText: {

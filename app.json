@@ -1,0 +1,66 @@
+
+{
+  "expo": {
+    "name": "Flow Focus",
+    "slug": "flow-focus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/natively-dark.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/natively-dark.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.flowfocus.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "audio"
+        ],
+        "NSMicrophoneUsageDescription": "This app uses audio for focus sessions and ambient sounds.",
+        "NSCameraUsageDescription": "This app may use camera for profile pictures."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/natively-dark.png",
+        "backgroundColor": "#000000"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.flowfocus.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/final_quest_240x240.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-router",
+      "expo-web-browser",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.your-google-client-id"
+        }
+      ]
+    ],
+    "scheme": "flowfocus",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}

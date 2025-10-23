@@ -33,25 +33,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     console.log('AuthProvider: Initializing auth context...');
-    
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('AuthProvider: Initial session check:', { session, error });
-      if (error) {
-        console.error('AuthProvider: Error getting initial session:', error);
+
+    let isSubscribed = true;
+
+    // Set a timeout to ensure we don't hang forever
+    const initTimeout = setTimeout(() => {
+      if (isSubscribed && loading) {
+        console.warn('AuthProvider: Initialization timeout, proceeding without session');
+        setLoading(false);
       }
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    }).catch((error) => {
-      console.error('AuthProvider: Exception getting initial session:', error);
-      setLoading(false);
-    });
+    }, 5000); // 5 second timeout
+
+    // Get initial session
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (!isSubscribed) return;
+
+        console.log('AuthProvider: Initial session check:', { session, error });
+        if (error) {
+          console.error('AuthProvider: Error getting initial session:', error);
+        }
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        clearTimeout(initTimeout);
+      })
+      .catch((error) => {
+        if (!isSubscribed) return;
+
+        console.error('AuthProvider: Exception getting initial session:', error);
+        setLoading(false);
+        clearTimeout(initTimeout);
+      });
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isSubscribed) return;
+
       console.log('AuthProvider: Auth state changed:', { event: _event, session, user: session?.user });
       setSession(session);
       setUser(session?.user ?? null);
@@ -60,6 +80,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return () => {
       console.log('AuthProvider: Cleaning up auth subscription');
+      isSubscribed = false;
+      clearTimeout(initTimeout);
       subscription.unsubscribe();
     };
   }, []);

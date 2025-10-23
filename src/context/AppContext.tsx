@@ -335,22 +335,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadState = async () => {
     try {
-      const savedState = await AsyncStorage.getItem('adhd_focus_app_state');
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('AsyncStorage timeout')), 3000)
+      );
+
+      const loadPromise = AsyncStorage.getItem('adhd_focus_app_state');
+
+      const savedState = await Promise.race([loadPromise, timeoutPromise]) as string | null;
+
       if (savedState) {
         const parsedState = JSON.parse(savedState);
         // Convert date strings back to Date objects
-        if (parsedState.session.startTime) {
+        if (parsedState.session?.startTime) {
           parsedState.session.startTime = new Date(parsedState.session.startTime);
         }
-        if (parsedState.session.endTime) {
+        if (parsedState.session?.endTime) {
           parsedState.session.endTime = new Date(parsedState.session.endTime);
         }
-        parsedState.clock.manipulatedTime = new Date(parsedState.clock.manipulatedTime);
-        parsedState.history = parsedState.history.map((item: any) => ({
-          ...item,
-          date: new Date(item.date),
-        }));
-        
+        if (parsedState.clock?.manipulatedTime) {
+          parsedState.clock.manipulatedTime = new Date(parsedState.clock.manipulatedTime);
+        }
+        if (parsedState.history) {
+          parsedState.history = parsedState.history.map((item: any) => ({
+            ...item,
+            date: new Date(item.date),
+          }));
+        }
+
         // Handle scheduled sessions dates
         if (parsedState.settings?.scheduledSessions) {
           parsedState.settings.scheduledSessions = parsedState.settings.scheduledSessions.map((session: any) => ({
@@ -358,24 +370,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
             startTime: new Date(session.startTime),
           }));
         }
-        
+
         // Ensure settings exist with defaults
         if (!parsedState.settings) {
           parsedState.settings = initialState.settings;
         }
-        
+
         dispatch({ type: 'LOAD_STATE', payload: parsedState });
       }
     } catch (error) {
-      console.log('Error loading state:', error);
+      console.log('Error loading state (using defaults):', error);
+      // Continue with initial state if loading fails
     }
   };
 
   const saveState = async (stateToSave: AppState) => {
     try {
-      await AsyncStorage.setItem('adhd_focus_app_state', JSON.stringify(stateToSave));
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Save timeout')), 3000)
+      );
+
+      const savePromise = AsyncStorage.setItem('adhd_focus_app_state', JSON.stringify(stateToSave));
+
+      await Promise.race([savePromise, timeoutPromise]);
     } catch (error) {
       console.log('Error saving state:', error);
+      // Fail silently to avoid blocking the app
     }
   };
 

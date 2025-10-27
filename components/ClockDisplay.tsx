@@ -2,14 +2,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { clockService, ClockData } from '@/src/services/ClockService';
+import { clockService, ClockData, ClockStyle } from '@/src/services/ClockService';
+import { useAppContext } from '@/src/context/AppContext';
+import { DigitalClockView } from './clock-styles/DigitalClockView';
+import { AnalogClockView } from './clock-styles/AnalogClockView';
+import { EightBitClockView } from './clock-styles/EightBitClockView';
+import { CircularProgressClockView } from './clock-styles/CircularProgressClockView';
 
 interface ClockDisplayProps {
   onSessionComplete?: () => void;
 }
 
 export default function ClockDisplay({ onSessionComplete }: ClockDisplayProps) {
+  const { state } = useAppContext();
   const [clockData, setClockData] = useState<ClockData>(clockService.getCurrentData());
+  const clockStyle = state.session.clockStyle;
 
   useEffect(() => {
     const unsubscribe = clockService.subscribe((data: ClockData) => {
@@ -69,11 +76,39 @@ export default function ClockDisplay({ onSessionComplete }: ClockDisplayProps) {
     return `Next +${clockData.timeSlotDuration}m in ${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // Render the appropriate clock style component
+  const renderClockStyle = () => {
+    switch (clockStyle) {
+      case 'analog-classic':
+        return <AnalogClockView time={clockData.displayTime} variant="classic" />;
+      case 'analog-minimalist':
+        return <AnalogClockView time={clockData.displayTime} variant="minimalist" />;
+      case 'digital-modern':
+        return <DigitalClockView time={clockData.displayTime} variant="modern" />;
+      case 'digital-lcd':
+        return <DigitalClockView time={clockData.displayTime} variant="lcd" />;
+      case '8bit-retro':
+        return <EightBitClockView time={clockData.displayTime} />;
+      case 'circular-progress':
+        return <CircularProgressClockView time={clockData.displayTime} />;
+      case 'flip-clock':
+        // TODO: Implement FlipClockView
+        return <DigitalClockView time={clockData.displayTime} variant="modern" />;
+      case 'binary':
+        // TODO: Implement BinaryClockView
+        return <DigitalClockView time={clockData.displayTime} variant="modern" />;
+      default:
+        return <DigitalClockView time={clockData.displayTime} variant="modern" />;
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Main Clock Display */}
-      <View style={styles.clockContainer}>
-        <Text style={styles.timeText}>{formatTime(clockData.displayTime)}</Text>
+      {/* Main Clock Display - Render Selected Style */}
+      {renderClockStyle()}
+
+      {/* Mode & Advantage Info */}
+      <View style={styles.infoContainer}>
         <View style={styles.modeContainer}>
           <Text style={styles.modeText}>
             {clockData.mode === 'speed' ? `${clockData.speedMultiplier}x Speed` : 'Locked Mode'}
@@ -135,23 +170,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  clockContainer: {
+  infoContainer: {
     alignItems: 'center',
-    marginBottom: 30,
-  },
-  timeText: {
-    fontSize: 48,
-    fontWeight: '300',
-    color: colors.text,
-    fontFamily: 'monospace',
-    letterSpacing: 2,
+    marginTop: 16,
+    marginBottom: 20,
   },
   modeContainer: {
     backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    marginTop: 12,
+    marginBottom: 8,
   },
   modeText: {
     fontSize: 14,

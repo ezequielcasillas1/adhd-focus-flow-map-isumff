@@ -15,6 +15,77 @@ export interface ClockData {
   nextSlotTime?: Date; // When the next slot advancement will occur
 }
 
+// Clock Style Types
+export type ClockStyle = 
+  | 'analog-classic'      // Classic analog clock with hour/minute hands
+  | 'analog-minimalist'   // Minimalist analog with thin lines
+  | 'digital-modern'      // Large digital numbers, modern font
+  | 'digital-lcd'         // LCD/segment display style
+  | '8bit-retro'          // 8-bit pixel art style clock
+  | 'circular-progress'   // Circular progress bar style
+  | 'flip-clock'          // Flip clock animation style
+  | 'binary';             // Binary clock representation
+
+export interface ClockStyleDefinition {
+  id: ClockStyle;
+  name: string;
+  description: string;
+  thumbnail?: string; // Optional preview image
+  category: 'analog' | 'digital' | 'creative';
+}
+
+// Clock Style Library
+export const CLOCK_STYLES: ClockStyleDefinition[] = [
+  {
+    id: 'analog-classic',
+    name: 'Classic Analog',
+    description: 'Traditional clock with hour and minute hands',
+    category: 'analog'
+  },
+  {
+    id: 'analog-minimalist',
+    name: 'Minimalist Analog',
+    description: 'Clean, minimal design with thin lines',
+    category: 'analog'
+  },
+  {
+    id: 'digital-modern',
+    name: 'Modern Digital',
+    description: 'Large, easy-to-read digital display',
+    category: 'digital'
+  },
+  {
+    id: 'digital-lcd',
+    name: 'LCD Display',
+    description: 'Retro LCD segment display style',
+    category: 'digital'
+  },
+  {
+    id: '8bit-retro',
+    name: '8-Bit Retro',
+    description: 'Pixel art style inspired by classic games',
+    category: 'creative'
+  },
+  {
+    id: 'circular-progress',
+    name: 'Circular Progress',
+    description: 'Progress ring showing time advancement',
+    category: 'creative'
+  },
+  {
+    id: 'flip-clock',
+    name: 'Flip Clock',
+    description: 'Animated flip-style numbers',
+    category: 'digital'
+  },
+  {
+    id: 'binary',
+    name: 'Binary Clock',
+    description: 'For the tech-savvy: time in binary',
+    category: 'creative'
+  }
+];
+
 export class ClockService {
   private subscribers: ((data: ClockData) => void)[] = [];
   private realTimeUnsubscribe: (() => void) | null = null;

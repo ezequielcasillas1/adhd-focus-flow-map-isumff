@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ClockStyle } from '@/src/services/ClockService';
 
 // Types
 export interface User {
@@ -16,6 +17,7 @@ export interface Session {
   timeSlotDuration: 15 | 30 | 50; // New: time slot duration in minutes
   slotEveryMinutes: number; // New: how often to apply slot advancement
   targetDuration: number; // minutes
+  clockStyle: ClockStyle; // Clock display style preference
   startTime?: Date;
   endTime?: Date;
   actualDuration: number; // seconds
@@ -115,6 +117,7 @@ const initialState: AppState = {
     timeSlotDuration: 15, // Default to 15 minutes
     slotEveryMinutes: 30, // Default to every 30 minutes
     targetDuration: 25,
+    clockStyle: 'digital-modern', // Default clock style
     actualDuration: 0,
     efficiency: {
       score: 0,
@@ -174,6 +177,7 @@ type AppAction =
   | { type: 'START_SESSION'; payload: { mode: 'speed' | 'locked'; targetDuration: number } }
   | { type: 'END_SESSION'; payload: { duration: number } }
   | { type: 'UPDATE_SESSION'; payload: Partial<Session> }
+  | { type: 'UPDATE_CLOCK_STYLE'; payload: ClockStyle }
   | { type: 'UPDATE_SOUNDS'; payload: Partial<Sounds> }
   | { type: 'UPDATE_CLOCK'; payload: Partial<Clock> }
   | { type: 'UPDATE_FEEDBACK'; payload: Partial<Feedback> }
@@ -243,6 +247,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         session: { ...state.session, ...action.payload },
+      };
+
+    case 'UPDATE_CLOCK_STYLE':
+      return {
+        ...state,
+        session: { ...state.session, clockStyle: action.payload },
       };
 
     case 'UPDATE_SOUNDS':

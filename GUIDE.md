@@ -1,4 +1,4 @@
-# Cursor.ai Project Guidelines (for BibleMemory.ai)
+# Cursor.ai Project Guidelines (for Time Relief)
 The UI for every new addon or feature must be built with beautiful, professional, and modern design. Each element should have eye-catching styling, such as vibrant gradients, smooth animations, polished typography, and intuitive layouts that immediately attract users and encourage interaction. Every label, button, or mode must have a clear and descriptive name so users instantly understand what the feature does. Consistency, elegance, and engagement should be prioritized across all UI content, ensuring that every addon feels like a refined, high-quality product experience.
 
 > **Purpose:** Give Cursor (and any connected AI agents) a single source of truth for how to contribute to this repo without breaking critical pieces, while still allowing tasteful UI innovation inspired by **bolt.new** patterns.

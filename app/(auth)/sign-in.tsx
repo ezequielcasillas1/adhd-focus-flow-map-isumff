@@ -17,11 +17,13 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { GlassView } from 'expo-glass-effect';
 import { supabase } from '@/app/integrations/supabase/client';
-import {
-  GoogleSignin,
-  GoogleSigninButton,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
+// Google Sign-in temporarily disabled for Expo Go compatibility
+// Uncomment when building with EAS or using expo-dev-client:
+// import {
+//   GoogleSignin,
+//   GoogleSigninButton,
+//   statusCodes,
+// } from '@react-native-google-signin/google-signin';
 
 const styles = StyleSheet.create({
   container: {
@@ -208,33 +210,12 @@ export default function SignInScreen() {
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [userEmail, setUserEmail] = useState('');
 
-  // Configure Google Sign-In
+  // Configure Google Sign-In (disabled for Expo Go)
   React.useEffect(() => {
-    // Get Google Web Client ID from environment
-    const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'YOUR_ACTUAL_GOOGLE_WEB_CLIENT_ID_HERE';
-    
-    console.log('Google Sign-In: Checking configuration...', {
-      hasClientId: !!GOOGLE_WEB_CLIENT_ID,
-      isPlaceholder: GOOGLE_WEB_CLIENT_ID === 'YOUR_ACTUAL_GOOGLE_WEB_CLIENT_ID_HERE'
-    });
-    
-    // Check if Google Client ID is properly configured
-    if (GOOGLE_WEB_CLIENT_ID && GOOGLE_WEB_CLIENT_ID !== 'YOUR_ACTUAL_GOOGLE_WEB_CLIENT_ID_HERE') {
-      try {
-        GoogleSignin.configure({
-          webClientId: GOOGLE_WEB_CLIENT_ID,
-          offlineAccess: true,
-        });
-        setGoogleConfigured(true);
-        console.log('Google Sign-In: Configured successfully');
-      } catch (error) {
-        console.error('Google Sign-In: Configuration failed:', error);
-        setGoogleConfigured(false);
-      }
-    } else {
-      console.log('Google Sign-In: Not configured - missing or placeholder client ID');
-      setGoogleConfigured(false);
-    }
+    // Google Sign-in is disabled for Expo Go compatibility
+    // Will be enabled when building with EAS or using expo-dev-client
+    setGoogleConfigured(false);
+    console.log('Google Sign-In: Disabled for Expo Go compatibility');
   }, []);
 
   const validateForm = () => {
@@ -400,46 +381,10 @@ export default function SignInScreen() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!googleConfigured) {
-      Alert.alert(
-        'Google Sign-In Not Available',
-        'Google Sign-In is not configured yet. Please use email and password to sign in.'
-      );
-      return;
-    }
-
-    try {
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      
-      if (userInfo.data?.idToken) {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: 'google',
-          token: userInfo.data.idToken,
-        });
-
-        if (error) {
-          Alert.alert('Google Sign In Failed', error.message);
-        } else {
-          console.log('Google sign in successful:', data);
-          router.replace('/(tabs)/(home)/');
-        }
-      } else {
-        throw new Error('No ID token present!');
-      }
-    } catch (error: any) {
-      console.error('Google sign in error:', error);
-      
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('User cancelled the login flow');
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('Operation (e.g. sign in) is in progress already');
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Error', 'Play services not available or outdated');
-      } else {
-        Alert.alert('Google Sign In Failed', error.message || 'An unexpected error occurred');
-      }
-    }
+    Alert.alert(
+      'Google Sign-In Unavailable in Expo Go',
+      'Google Sign-In requires native code and is not available in Expo Go. Please use email and password to sign in.\n\nTo enable Google Sign-In, build the app with EAS Build or use expo-dev-client.'
+    );
   };
 
   const handleForgotPassword = () => {
@@ -471,13 +416,11 @@ export default function SignInScreen() {
               Sign in to continue your focus journey
             </Text>
 
-            {!googleConfigured && (
-              <View style={styles.configNotice}>
-                <Text style={styles.configNoticeText}>
-                  💡 Google Sign-In is available but needs to be configured with your Google Cloud credentials. For now, you can sign in with email and password.
-                </Text>
-              </View>
-            )}
+            <View style={styles.configNotice}>
+              <Text style={styles.configNoticeText}>
+                💡 Running in Expo Go. Google Sign-In requires a custom build (EAS). Use email and password to sign in.
+              </Text>
+            </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
@@ -574,23 +517,13 @@ export default function SignInScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {googleConfigured ? (
-              <View style={styles.googleButton}>
-                <GoogleSigninButton
-                  size={GoogleSigninButton.Size.Wide}
-                  color={GoogleSigninButton.Color.Dark}
-                  onPress={handleGoogleSignIn}
-                />
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.googleButtonCustom}
-                onPress={handleGoogleSignIn}
-              >
-                <IconSymbol name="globe" size={20} color="white" />
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={[styles.googleButtonCustom, { opacity: 0.5 }]}
+              onPress={handleGoogleSignIn}
+            >
+              <IconSymbol name="globe" size={20} color="white" />
+              <Text style={styles.googleButtonText}>Continue with Google (Requires EAS Build)</Text>
+            </TouchableOpacity>
 
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>

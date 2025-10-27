@@ -394,6 +394,14 @@ export default function SessionScreen() {
           ) : (
             // Running Session
             <View style={styles.runningContainer}>
+              {/* Clock Style Preset Button */}
+              <TouchableOpacity
+                style={styles.floatingPresetButton}
+                onPress={() => setShowClockStyleSelector(true)}
+              >
+                <IconSymbol name="paintpalette.fill" color={colors.text} size={20} />
+              </TouchableOpacity>
+
               <ClockDisplay />
               
               <View style={[commonStyles.silverCard, styles.sessionInfo]}>
@@ -667,6 +675,23 @@ const styles = StyleSheet.create({
   runningContainer: {
     flex: 1,
     justifyContent: 'center',
+    position: 'relative',
+  },
+  floatingPresetButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: colors.primary,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.metallicGold,
+    boxShadow: '0px 4px 12px rgba(212, 175, 55, 0.4)',
+    elevation: 6,
+    zIndex: 10,
   },
   sessionInfo: {
     alignItems: 'center',

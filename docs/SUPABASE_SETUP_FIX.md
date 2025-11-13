@@ -153,3 +153,4 @@ If you're still having issues:
 2. Verify your Supabase project is not paused (free tier pauses after 7 days of inactivity)
 3. Make sure you're using the correct credentials from the right project
 
+

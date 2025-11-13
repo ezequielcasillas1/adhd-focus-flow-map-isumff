@@ -6,7 +6,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { colors } from '@/styles/commonStyles';
 
 export default function Index() {
-  const { session, loading } = useAuth();
+  const { session, loading, isGuestMode } = useAuth();
 
   if (loading) {
     return (
@@ -21,7 +21,7 @@ export default function Index() {
     );
   }
 
-  if (session) {
+  if (session || isGuestMode) {
     return <Redirect href="/(tabs)/(home)/" />;
   }
 

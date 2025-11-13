@@ -3,12 +3,15 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/app/integrations/supabase/client';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  isGuestMode: boolean;
   signOut: () => Promise<void>;
+  signInAsGuest: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,27 +28,50 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const GUEST_MODE_KEY = '@adhd_timer_guest_mode';
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGuestMode, setIsGuestMode] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     console.log('AuthProvider: Initializing auth context...');
     
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('AuthProvider: Initial session check:', { session, error });
-      if (error) {
-        console.error('AuthProvider: Error getting initial session:', error);
+    // Check for guest mode first
+    const checkGuestMode = async () => {
+      try {
+        const guestMode = await AsyncStorage.getItem(GUEST_MODE_KEY);
+        if (guestMode === 'true') {
+          console.log('AuthProvider: Guest mode detected');
+          setIsGuestMode(true);
+          setLoading(false);
+          return true;
+        }
+      } catch (error) {
+        console.error('AuthProvider: Error checking guest mode:', error);
       }
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    }).catch((error) => {
-      console.error('AuthProvider: Exception getting initial session:', error);
-      setLoading(false);
+      return false;
+    };
+
+    checkGuestMode().then((isGuest) => {
+      if (isGuest) return; // Skip Supabase auth check if in guest mode
+
+      // Get initial session
+      supabase.auth.getSession().then(({ data: { session }, error }) => {
+        console.log('AuthProvider: Initial session check:', { session, error });
+        if (error) {
+          console.error('AuthProvider: Error getting initial session:', error);
+        }
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }).catch((error) => {
+        console.error('AuthProvider: Exception getting initial session:', error);
+        setLoading(false);
+      });
     });
 
     // Listen for auth changes
@@ -64,15 +90,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
+  const signInAsGuest = async () => {
+    try {
+      console.log('AuthContext: Signing in as guest...');
+      await AsyncStorage.setItem(GUEST_MODE_KEY, 'true');
+      setIsGuestMode(true);
+      console.log('AuthContext: Guest mode activated');
+    } catch (error) {
+      console.error('AuthContext: Error setting guest mode:', error);
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       console.log('AuthContext: Starting sign out process...');
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('AuthContext: Error signing out:', error);
-        throw error;
+      
+      // Clear guest mode
+      if (isGuestMode) {
+        await AsyncStorage.removeItem(GUEST_MODE_KEY);
+        setIsGuestMode(false);
+        console.log('AuthContext: Guest mode cleared');
+      } else {
+        // Sign out from Supabase
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('AuthContext: Error signing out:', error);
+          throw error;
+        }
+        console.log('AuthContext: Sign out successful');
       }
-      console.log('AuthContext: Sign out successful, navigating to welcome screen...');
+      
       // Navigate to welcome screen after successful sign out
       router.replace('/(auth)/welcome');
     } catch (error) {
@@ -85,7 +133,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     session,
     user,
     loading,
+    isGuestMode,
     signOut,
+    signInAsGuest,
   };
 
   return (

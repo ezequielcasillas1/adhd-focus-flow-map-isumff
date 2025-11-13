@@ -196,6 +196,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  guestButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  guestButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  devNotice: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  devNoticeText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });
 
 export default function SignInScreen() {
@@ -209,6 +236,7 @@ export default function SignInScreen() {
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const { signInAsGuest } = require('@/src/context/AuthContext').useAuth();
 
   // Configure Google Sign-In (disabled for Expo Go)
   React.useEffect(() => {
@@ -391,6 +419,21 @@ export default function SignInScreen() {
     router.push('/(auth)/reset-password');
   };
 
+  const handleGuestSignIn = async () => {
+    setLoading(true);
+    try {
+      console.log('SignIn: Signing in as guest...');
+      await signInAsGuest();
+      // Navigate to main app
+      router.replace('/(tabs)/(home)/');
+    } catch (error: any) {
+      console.error('SignIn: Guest sign in error:', error);
+      Alert.alert('Error', 'Failed to sign in as guest. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -523,6 +566,22 @@ export default function SignInScreen() {
             >
               <IconSymbol name="globe" size={20} color="white" />
               <Text style={styles.googleButtonText}>Continue with Google (Requires EAS Build)</Text>
+            </TouchableOpacity>
+
+            <View style={styles.devNotice}>
+              <Text style={styles.devNoticeText}>
+                🚀 Dev Mode: Skip sign-in and explore the app
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.guestButton, loading && { opacity: 0.6 }]}
+              onPress={handleGuestSignIn}
+              disabled={loading}
+            >
+              <Text style={styles.guestButtonText}>
+                {loading ? 'Loading...' : 'Continue as Guest'}
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.signUpContainer}>

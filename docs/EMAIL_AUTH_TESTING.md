@@ -312,3 +312,4 @@ If you're still having issues:
 3. Verify your Supabase project is active (not paused)
 4. See: `docs/SUPABASE_SETUP_FIX.md` for more help
 
+

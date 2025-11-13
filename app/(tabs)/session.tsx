@@ -16,15 +16,13 @@ import { IconSymbol } from "@/components/IconSymbol";
 import { colors, commonStyles } from "@/styles/commonStyles";
 import { useAppContext } from "@/src/context/AppContext";
 import { soundService } from "@/src/services/SoundService";
-import { clockService, ClockStyle } from "@/src/services/ClockService";
+import { clockService } from "@/src/services/ClockService";
 import ClockDisplay from "@/components/ClockDisplay";
-import { ClockStyleSelector } from "@/components/ClockStyleSelector";
 
 export default function SessionScreen() {
   const router = useRouter();
   const { state, dispatch } = useAppContext();
   const [isRunning, setIsRunning] = useState(false);
-  const [showClockStyleSelector, setShowClockStyleSelector] = useState(false);
 
   useEffect(() => {
     // Check if session is already running
@@ -74,15 +72,6 @@ export default function SessionScreen() {
     });
     clockService.setSpeedMultiplier(speed);
     soundService.playHaptic('light');
-  };
-
-  const handleClockStyleChange = (style: ClockStyle) => {
-    console.log('Changing clock style to:', style);
-    dispatch({
-      type: 'UPDATE_CLOCK_STYLE',
-      payload: style
-    });
-    soundService.playHaptic('medium');
   };
 
   const handleStartSession = () => {
@@ -180,49 +169,6 @@ export default function SessionScreen() {
     soundService.playHaptic('light');
   };
 
-  // Helper functions for clock style info
-  const getClockStyleIcon = (style: ClockStyle): string => {
-    const iconMap: Record<ClockStyle, string> = {
-      'analog-classic': 'clock',
-      'analog-minimalist': 'clock.badge',
-      'digital-modern': 'textformat.123',
-      'digital-lcd': 'rectangle.inset.filled',
-      '8bit-retro': 'square.grid.3x3.fill',
-      'circular-progress': 'circle.dotted',
-      'flip-clock': 'clock.arrow.2.circlepath',
-      'binary': '01.circle',
-    };
-    return iconMap[style] || 'clock';
-  };
-
-  const getClockStyleName = (style: ClockStyle): string => {
-    const nameMap: Record<ClockStyle, string> = {
-      'analog-classic': 'Classic Analog',
-      'analog-minimalist': 'Minimalist Analog',
-      'digital-modern': 'Modern Digital',
-      'digital-lcd': 'LCD Display',
-      '8bit-retro': '8-Bit Retro',
-      'circular-progress': 'Circular Progress',
-      'flip-clock': 'Flip Clock',
-      'binary': 'Binary Clock',
-    };
-    return nameMap[style] || 'Unknown';
-  };
-
-  const getClockStyleDescription = (style: ClockStyle): string => {
-    const descMap: Record<ClockStyle, string> = {
-      'analog-classic': 'Traditional clock with hour and minute hands',
-      'analog-minimalist': 'Clean, minimal design with thin lines',
-      'digital-modern': 'Large, easy-to-read digital display',
-      'digital-lcd': 'Retro LCD segment display style',
-      '8bit-retro': 'Pixel art style inspired by classic games',
-      'circular-progress': 'Progress ring showing time advancement',
-      'flip-clock': 'Animated flip-style numbers',
-      'binary': 'For the tech-savvy: time in binary',
-    };
-    return descMap[style] || 'Unknown style';
-  };
-
   return (
     <SafeAreaView style={[commonStyles.safeArea]} edges={['top']}>
       {Platform.OS === 'ios' && (
@@ -249,37 +195,34 @@ export default function SessionScreen() {
                 Configure Real-Time Clock
               </Text>
               
-              {/* Clock View Selection */}
-              <View style={[commonStyles.silverCard]}>
+              {/* Clock View Selection - Coming Soon */}
+              <View style={[commonStyles.bronzeCard, styles.comingSoonCard]}>
                 <View style={styles.clockViewHeader}>
                   <Text style={commonStyles.subtitle}>Clock View</Text>
-                  <TouchableOpacity
-                    style={styles.presetButton}
-                    onPress={() => setShowClockStyleSelector(true)}
-                  >
-                    <IconSymbol name="paintpalette.fill" color={colors.text} size={20} />
-                    <Text style={styles.presetButtonText}>Presets</Text>
-                  </TouchableOpacity>
+                  <View style={styles.comingSoonBadge}>
+                    <IconSymbol name="clock.badge" color={colors.text} size={16} />
+                    <Text style={styles.comingSoonText}>Coming Soon</Text>
+                  </View>
                 </View>
-                <Text style={styles.description}>
+                <Text style={[styles.description, styles.comingSoonDescription]}>
                   Choose your preferred clock display style
                 </Text>
                 
-                {/* Current Style Preview */}
-                <View style={styles.currentStylePreview}>
-                  <View style={styles.stylePreviewIcon}>
+                {/* Feature Preview */}
+                <View style={styles.featurePreview}>
+                  <View style={styles.featurePreviewIcon}>
                     <IconSymbol 
-                      name={getClockStyleIcon(state.session.clockStyle)} 
-                      color={colors.metallicGold} 
+                      name="paintpalette.fill" 
+                      color={colors.textSecondary} 
                       size={32} 
                     />
                   </View>
-                  <View style={styles.stylePreviewInfo}>
-                    <Text style={styles.stylePreviewName}>
-                      {getClockStyleName(state.session.clockStyle)}
+                  <View style={styles.featurePreviewInfo}>
+                    <Text style={styles.featurePreviewTitle}>
+                      Multiple Clock Styles
                     </Text>
-                    <Text style={styles.stylePreviewDescription}>
-                      {getClockStyleDescription(state.session.clockStyle)}
+                    <Text style={styles.featurePreviewDescription}>
+                      Analog, Digital, 8-Bit Retro, and more clock designs coming soon!
                     </Text>
                   </View>
                 </View>
@@ -394,14 +337,6 @@ export default function SessionScreen() {
           ) : (
             // Running Session
             <View style={styles.runningContainer}>
-              {/* Clock Style Preset Button */}
-              <TouchableOpacity
-                style={styles.floatingPresetButton}
-                onPress={() => setShowClockStyleSelector(true)}
-              >
-                <IconSymbol name="paintpalette.fill" color={colors.text} size={20} />
-              </TouchableOpacity>
-
               <ClockDisplay />
               
               <View style={[commonStyles.silverCard, styles.sessionInfo]}>
@@ -457,14 +392,6 @@ export default function SessionScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* Clock Style Selector Modal */}
-      <ClockStyleSelector
-        visible={showClockStyleSelector}
-        currentStyle={state.session.clockStyle}
-        onSelect={handleClockStyleChange}
-        onClose={() => setShowClockStyleSelector(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -491,31 +418,35 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 8,
   },
+  comingSoonCard: {
+    opacity: 0.7,
+  },
   clockViewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  presetButton: {
+  comingSoonBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 6,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.metallicSilver,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
+    borderColor: colors.metallicBronze,
   },
-  presetButtonText: {
-    fontSize: 14,
+  comingSoonText: {
+    fontSize: 12,
     fontWeight: '600',
     color: colors.text,
   },
-  currentStylePreview: {
+  comingSoonDescription: {
+    opacity: 0.8,
+  },
+  featurePreview: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -524,11 +455,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.metallicGold,
-    boxShadow: '0px 3px 6px rgba(212, 175, 55, 0.2)',
-    elevation: 4,
+    borderColor: colors.metallicBronze,
+    opacity: 0.8,
   },
-  stylePreviewIcon: {
+  featurePreviewIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -538,16 +468,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.metallicSilver,
   },
-  stylePreviewInfo: {
+  featurePreviewInfo: {
     flex: 1,
   },
-  stylePreviewName: {
+  featurePreviewTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textSecondary,
     marginBottom: 4,
   },
-  stylePreviewDescription: {
+  featurePreviewDescription: {
     fontSize: 12,
     color: colors.textSecondary,
     lineHeight: 16,
@@ -675,23 +605,6 @@ const styles = StyleSheet.create({
   runningContainer: {
     flex: 1,
     justifyContent: 'center',
-    position: 'relative',
-  },
-  floatingPresetButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: colors.primary,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.metallicGold,
-    boxShadow: '0px 4px 12px rgba(212, 175, 55, 0.4)',
-    elevation: 6,
-    zIndex: 10,
   },
   sessionInfo: {
     alignItems: 'center',

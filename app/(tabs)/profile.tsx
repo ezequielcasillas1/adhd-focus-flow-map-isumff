@@ -19,7 +19,7 @@ import { useAuth } from "@/src/context/AuthContext";
 
 export default function ProfileScreen() {
   const { state } = useAppContext();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isGuestMode } = useAuth();
 
   const formatTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
@@ -83,6 +83,7 @@ export default function ProfileScreen() {
   };
 
   const getUserInitials = (): string => {
+    if (isGuestMode) return 'GU';
     const name = user?.user_metadata?.name || state?.user?.name || 'User';
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   };
@@ -126,10 +127,10 @@ export default function ProfileScreen() {
             </View>
           </View>
           <Text style={styles.userName}>
-            {user?.user_metadata?.name || state.user?.name || 'Focus User'}
+            {isGuestMode ? 'Guest User' : (user?.user_metadata?.name || state.user?.name || 'Focus User')}
           </Text>
           <Text style={styles.userEmail}>
-            {user?.email || state.user?.email || 'user@example.com'}
+            {isGuestMode ? 'guest@example.com' : (user?.email || state.user?.email || 'user@example.com')}
           </Text>
         </View>
 

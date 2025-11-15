@@ -22,8 +22,9 @@ export default function ProfileScreen() {
   const { user, signOut, isGuestMode } = useAuth();
 
   const formatTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const totalMinutes = Math.floor(minutes);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
     if (hours > 0) {
       return `${hours}h ${mins}m`;
     }
@@ -57,29 +58,60 @@ export default function ProfileScreen() {
   };
 
   const handleSignOut = async (): Promise<void> => {
-    Alert.alert(
-      "Sign Out",
-      "Are you sure you want to sign out?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Sign Out",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              console.log('ProfileScreen: User confirmed sign out, calling signOut...');
-              await signOut();
-            } catch (error) {
-              console.error('ProfileScreen: Error signing out:', error);
-              Alert.alert("Error", "Failed to sign out. Please try again.");
+    // Web-compatible confirmation
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to sign out?');
+      if (!confirmed) {
+        console.log('ProfileScreen: User cancelled sign out');
+        return;
+      }
+    } else {
+      // Native Alert for mobile
+      Alert.alert(
+        "Sign Out",
+        "Are you sure you want to sign out?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Sign Out",
+            style: "destructive",
+            onPress: async () => {
+              await performSignOut();
             }
           }
+        ]
+      );
+      return; // Exit here for native, callback will handle sign out
+    }
+    
+    // For web, continue directly
+    await performSignOut();
+  };
+
+  const performSignOut = async (): Promise<void> => {
+    try {
+      console.log('ProfileScreen: Performing sign out...');
+      await signOut();
+      console.log('ProfileScreen: Sign out completed successfully');
+    } catch (error: any) {
+      // Use console.log instead of console.error to prevent red error screen
+      console.log('ProfileScreen: Sign out completed with non-fatal error:', error?.message || error);
+      
+      // Show user-friendly message only if it's a real issue
+      // If session is missing, that's expected in multi-device scenarios
+      if (!error?.message?.includes('Auth session missing')) {
+        const errorMessage = 'Sign out completed. If you experience any issues, please restart the app.';
+        
+        if (Platform.OS === 'web') {
+          window.alert(errorMessage);
+        } else {
+          Alert.alert('Sign Out', errorMessage);
         }
-      ]
-    );
+      }
+    }
   };
 
   const getUserInitials = (): string => {
@@ -204,9 +236,9 @@ export default function ProfileScreen() {
               <IconSymbol name="star.fill" color={colors.primary} size={20} />
             </View>
             <View style={styles.detailedStatContent}>
-              <Text style={styles.detailedStatLabel}>Average Rating</Text>
+              <Text style={styles.detailedStatLabel}>Average Mood</Text>
               <Text style={styles.detailedStatValue}>
-                {state.progress?.averageRating ? `${state.progress.averageRating.toFixed(1)}/5` : 'N/A'}
+                {state.analytics?.averageMood ? `${state.analytics.averageMood.toFixed(1)}/5` : 'N/A'}
               </Text>
             </View>
           </View>
@@ -345,10 +377,11 @@ const styles = StyleSheet.create({
     }),
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 4,
+    textAlign: 'center',
   },
   statLabel: {
     fontSize: 12,

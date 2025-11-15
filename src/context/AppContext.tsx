@@ -1,7 +1,10 @@
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState, AppStateStatus } from 'react-native';
 import { ClockStyle } from '@/src/services/ClockService';
+import { useAuth } from './AuthContext';
+import { dataService, SessionAnalytics } from '@/src/services/DataService';
 
 // Types
 export interface User {
@@ -14,18 +17,19 @@ export interface Session {
   mode: 'speed' | 'locked';
   speedSetting: number;
   timeSlotMultiplier: 1 | 2 | 3;
-  timeSlotDuration: 15 | 30 | 50; // New: time slot duration in minutes
-  slotEveryMinutes: number; // New: how often to apply slot advancement
-  targetDuration: number; // minutes
-  clockStyle: ClockStyle; // Clock display style preference
+  timeSlotDuration: 15 | 30 | 50;
+  slotEveryMinutes: number;
+  targetDuration: number;
+  clockStyle: ClockStyle;
   startTime?: Date;
   endTime?: Date;
-  actualDuration: number; // seconds
+  actualDuration: number;
   efficiency: {
     score: number;
     notes: string;
     suggestions: string[];
   };
+  supabaseSessionId?: string; // Track Supabase session ID
 }
 
 export interface Clock {
@@ -38,21 +42,21 @@ export interface Sounds {
   haptics: boolean;
   ticking: {
     enabled: boolean;
-    selectedSound: string; // Sound ID from SOUND_LIBRARY
+    selectedSound: string;
   };
   breathing: {
     enabled: boolean;
-    selectedSound: string; // Sound ID from SOUND_LIBRARY
+    selectedSound: string;
   };
   nature: {
     enabled: boolean;
-    selectedSound: string; // Sound ID from SOUND_LIBRARY
+    selectedSound: string;
   };
 }
 
 export interface Progress {
   totalSessions: number;
-  totalTime: number; // minutes
+  totalTime: number;
   currentStreak: number;
   weeklyProgress: number[];
   averageRating: number;
@@ -61,7 +65,7 @@ export interface Progress {
 export interface SessionHistoryItem {
   id: string;
   date: Date;
-  duration: number; // seconds
+  duration: number;
   mode: 'speed' | 'locked';
   efficiency: number;
   notes: string;
@@ -69,7 +73,7 @@ export interface SessionHistoryItem {
 
 export interface Feedback {
   currentFeedback: {
-    mood: number; // 1-5
+    mood: number;
     text: string;
   };
   aiSuggestions: string[];
@@ -79,10 +83,10 @@ export interface ScheduledSession {
   id: string;
   title: string;
   startTime: Date;
-  duration: number; // minutes
+  duration: number;
   mode: 'speed' | 'locked';
   isRecurring: boolean;
-  recurringDays?: number[]; // 0-6 (Sunday-Saturday)
+  recurringDays?: number[];
   isEnabled: boolean;
 }
 
@@ -101,6 +105,9 @@ export interface AppState {
   history: SessionHistoryItem[];
   feedback: Feedback;
   settings: AppSettings;
+  analytics: SessionAnalytics | null; // Real-time analytics from Supabase
+  isInitialized: boolean;
+  isSyncing: boolean;
 }
 
 // Initial state
@@ -112,12 +119,12 @@ const initialState: AppState = {
   session: {
     isActive: false,
     mode: 'speed',
-    speedSetting: 1.0,
+    speedSetting: 1,
     timeSlotMultiplier: 1,
-    timeSlotDuration: 15, // Default to 15 minutes
-    slotEveryMinutes: 30, // Default to every 30 minutes
+    timeSlotDuration: 15,
+    slotEveryMinutes: 30,
     targetDuration: 25,
-    clockStyle: 'digital-modern', // Default clock style
+    clockStyle: 'digital-modern',
     actualDuration: 0,
     efficiency: {
       score: 0,
@@ -134,15 +141,15 @@ const initialState: AppState = {
     haptics: true,
     ticking: {
       enabled: false,
-      selectedSound: 'ticking-classic-clock', // Default to classic clock
+      selectedSound: 'ticking-classic-clock',
     },
     breathing: {
       enabled: false,
-      selectedSound: 'breathing-deep-calm', // Default to deep calm breathing
+      selectedSound: 'breathing-deep-calm',
     },
     nature: {
       enabled: false,
-      selectedSound: 'nature-gentle-rain', // Default to gentle rain
+      selectedSound: 'nature-gentle-rain',
     },
   },
   progress: {
@@ -169,6 +176,9 @@ const initialState: AppState = {
     notifications: true,
     scheduledSessions: [],
   },
+  analytics: null,
+  isInitialized: false,
+  isSyncing: false,
 };
 
 // Action types
@@ -186,7 +196,11 @@ type AppAction =
   | { type: 'UPDATE_SCHEDULED_SESSION'; payload: { id: string; updates: Partial<ScheduledSession> } }
   | { type: 'DELETE_SCHEDULED_SESSION'; payload: string }
   | { type: 'LOAD_STATE'; payload: AppState }
-  | { type: 'RESET_STATE' };
+  | { type: 'RESET_STATE' }
+  | { type: 'SET_ANALYTICS'; payload: SessionAnalytics | null }
+  | { type: 'SET_INITIALIZED'; payload: boolean }
+  | { type: 'SET_SYNCING'; payload: boolean }
+  | { type: 'UPDATE_PROGRESS'; payload: Partial<Progress> };
 
 // Reducer
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -222,7 +236,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
       const newWeeklyProgress = [...state.progress.weeklyProgress];
       const today = new Date().getDay();
-      newWeeklyProgress[today] += action.payload.duration / 60; // Convert to minutes
+      newWeeklyProgress[today] += action.payload.duration / 60;
 
       return {
         ...state,
@@ -318,48 +332,155 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'RESET_STATE':
       return initialState;
 
+    case 'SET_ANALYTICS':
+      return {
+        ...state,
+        analytics: action.payload,
+      };
+
+    case 'SET_INITIALIZED':
+      return {
+        ...state,
+        isInitialized: action.payload,
+      };
+
+    case 'SET_SYNCING':
+      return {
+        ...state,
+        isSyncing: action.payload,
+      };
+
+    case 'UPDATE_PROGRESS':
+      return {
+        ...state,
+        progress: { ...state.progress, ...action.payload },
+      };
+
     default:
       return state;
   }
 }
 
-// Context
-const AppContext = createContext<{
+// Context with actions
+interface AppContextValue {
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
-} | null>(null);
+  actions: {
+    startSession: (mode: 'speed' | 'locked', targetDuration: number) => Promise<void>;
+    endSession: (duration: number, efficiency?: number, notes?: string, mood?: number, feedback?: string) => Promise<void>;
+    refreshAnalytics: () => Promise<void>;
+    syncSoundsToSupabase: () => Promise<void>;
+    updateClockStyle: (style: ClockStyle) => Promise<void>;
+  };
+}
+
+const AppContext = createContext<AppContextValue | null>(null);
 
 // Provider
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const { user: authUser, isGuestMode } = useAuth();
 
   // Load state from AsyncStorage on mount
   useEffect(() => {
     loadState();
   }, []);
 
+  // Load Supabase data when user authenticates
+  useEffect(() => {
+    if (authUser && !isGuestMode) {
+      console.log('AppContext: User authenticated, loading Supabase data');
+      loadSupabaseData(authUser.id);
+    } else if (isGuestMode) {
+      console.log('AppContext: Guest mode, using local data only');
+      dispatch({ type: 'SET_INITIALIZED', payload: true });
+    }
+  }, [authUser, isGuestMode]);
+
   // Save state to AsyncStorage whenever it changes
   useEffect(() => {
-    saveState(state);
+    if (state.isInitialized) {
+      saveState(state);
+    }
   }, [state]);
+
+  // Sync sounds to Supabase when changed (authenticated users only)
+  useEffect(() => {
+    if (authUser && !isGuestMode && state.isInitialized) {
+      syncSoundsToSupabase();
+    }
+  }, [state.sounds, authUser, isGuestMode, state.isInitialized]);
+
+  // Define refreshAnalytics BEFORE it's used in other functions/effects
+  const refreshAnalytics = useCallback(async () => {
+    if (!authUser || isGuestMode) {
+      console.log('AppContext: Skipping analytics refresh (guest mode or no user)');
+      return;
+    }
+
+    try {
+      console.log('AppContext: Refreshing analytics from Supabase');
+      const analytics = await dataService.getSessionAnalytics(authUser.id);
+      dispatch({ type: 'SET_ANALYTICS', payload: analytics });
+      
+      // Update progress from analytics
+      dispatch({
+        type: 'UPDATE_PROGRESS',
+        payload: {
+          totalSessions: analytics.totalSessions,
+          totalTime: analytics.totalTime,
+          currentStreak: analytics.currentStreak,
+          weeklyProgress: analytics.weeklyProgress,
+          averageRating: analytics.averageMood,
+        },
+      });
+      
+      console.log('AppContext: Analytics refreshed successfully');
+    } catch (error) {
+      console.error('AppContext: Error refreshing analytics:', error);
+    }
+  }, [authUser, isGuestMode]);
+
+  // Listen for app coming to foreground to sync data across devices
+  useEffect(() => {
+    if (!authUser || isGuestMode) return;
+
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        console.log('AppContext: App became active, refreshing analytics from Supabase');
+        refreshAnalytics();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [authUser, isGuestMode, refreshAnalytics]);
 
   const loadState = async () => {
     try {
       const savedState = await AsyncStorage.getItem('adhd_focus_app_state');
       if (savedState) {
         const parsedState = JSON.parse(savedState);
+        
         // Convert date strings back to Date objects
-        if (parsedState.session.startTime) {
+        if (parsedState.session?.startTime) {
           parsedState.session.startTime = new Date(parsedState.session.startTime);
         }
-        if (parsedState.session.endTime) {
+        if (parsedState.session?.endTime) {
           parsedState.session.endTime = new Date(parsedState.session.endTime);
         }
-        parsedState.clock.manipulatedTime = new Date(parsedState.clock.manipulatedTime);
-        parsedState.history = parsedState.history.map((item: any) => ({
-          ...item,
-          date: new Date(item.date),
-        }));
+        if (parsedState.clock?.manipulatedTime) {
+          parsedState.clock.manipulatedTime = new Date(parsedState.clock.manipulatedTime);
+        }
+        if (parsedState.history) {
+          parsedState.history = parsedState.history.map((item: any) => ({
+            ...item,
+            date: new Date(item.date),
+          }));
+        }
         
         // Handle scheduled sessions dates
         if (parsedState.settings?.scheduledSessions) {
@@ -369,15 +490,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }));
         }
         
-        // Ensure settings exist with defaults
-        if (!parsedState.settings) {
-          parsedState.settings = initialState.settings;
-        }
+        // Ensure all required fields exist
+        const stateWithDefaults = {
+          ...initialState,
+          ...parsedState,
+          isInitialized: false, // Will be set after Supabase load
+        };
         
-        dispatch({ type: 'LOAD_STATE', payload: parsedState });
+        dispatch({ type: 'LOAD_STATE', payload: stateWithDefaults });
       }
     } catch (error) {
-      console.log('Error loading state:', error);
+      console.error('AppContext: Error loading state:', error);
     }
   };
 
@@ -385,12 +508,177 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       await AsyncStorage.setItem('adhd_focus_app_state', JSON.stringify(stateToSave));
     } catch (error) {
-      console.log('Error saving state:', error);
+      console.error('AppContext: Error saving state:', error);
     }
   };
 
+  const loadSupabaseData = async (userId: string) => {
+    try {
+      console.log('AppContext: Loading data from Supabase for user:', userId);
+      dispatch({ type: 'SET_SYNCING', payload: true });
+
+      // Load profile
+      const profile = await dataService.getProfile(userId);
+      if (profile) {
+        dispatch({
+          type: 'SET_USER',
+          payload: { name: profile.name || 'Focus User', email: authUser?.email || '' },
+        });
+      }
+
+      // Load settings
+      const settings = await dataService.getUserSettings(userId);
+      if (settings) {
+        dispatch({
+          type: 'UPDATE_SOUNDS',
+          payload: {
+            master: settings.sounds_master ?? true,
+            haptics: settings.sounds_haptics ?? true,
+            ticking: {
+              enabled: settings.sounds_ticking ?? false,
+              selectedSound: settings.sound_ticking_type ?? 'ticking-classic-clock',
+            },
+            breathing: {
+              enabled: settings.sounds_breathing ?? false,
+              selectedSound: settings.sound_breathing_type ?? 'breathing-deep-calm',
+            },
+            nature: {
+              enabled: settings.sounds_nature ?? false,
+              selectedSound: settings.sound_nature_type ?? 'nature-gentle-rain',
+            },
+          },
+        });
+
+        dispatch({
+          type: 'UPDATE_CLOCK_STYLE',
+          payload: (settings.clock_style as ClockStyle) ?? 'digital-modern',
+        });
+      }
+
+      // Load analytics
+      await refreshAnalytics();
+
+      dispatch({ type: 'SET_INITIALIZED', payload: true });
+      dispatch({ type: 'SET_SYNCING', payload: false });
+      console.log('AppContext: Supabase data loaded successfully');
+    } catch (error) {
+      console.error('AppContext: Error loading Supabase data:', error);
+      dispatch({ type: 'SET_INITIALIZED', payload: true });
+      dispatch({ type: 'SET_SYNCING', payload: false });
+    }
+  };
+
+  const startSession = useCallback(async (mode: 'speed' | 'locked', targetDuration: number) => {
+    console.log('AppContext: Starting session', { mode, targetDuration });
+    
+    dispatch({
+      type: 'START_SESSION',
+      payload: { mode, targetDuration },
+    });
+
+    // Create session in Supabase for authenticated users
+    if (authUser && !isGuestMode) {
+      try {
+        const sessionData = await dataService.createSession(authUser.id, {
+          mode,
+          target_duration: targetDuration,
+          speed_multiplier: state.session.speedSetting,
+          time_slot_multiplier: state.session.timeSlotMultiplier,
+        });
+
+        if (sessionData) {
+          dispatch({
+            type: 'UPDATE_SESSION',
+            payload: { supabaseSessionId: sessionData.id },
+          });
+          console.log('AppContext: Session created in Supabase:', sessionData.id);
+        }
+      } catch (error) {
+        console.error('AppContext: Error creating session in Supabase:', error);
+      }
+    }
+  }, [authUser, isGuestMode, state.session.speedSetting, state.session.timeSlotMultiplier]);
+
+  const endSession = useCallback(async (
+    duration: number,
+    efficiency?: number,
+    notes?: string,
+    mood?: number,
+    feedback?: string
+  ) => {
+    console.log('AppContext: Ending session', { duration, efficiency, notes, mood });
+
+    dispatch({
+      type: 'END_SESSION',
+      payload: { duration },
+    });
+
+    // Complete session in Supabase for authenticated users
+    if (authUser && !isGuestMode && state.session.supabaseSessionId) {
+      try {
+        await dataService.completeSession(state.session.supabaseSessionId, {
+          actual_duration: duration,
+          efficiency_score: efficiency,
+          efficiency_notes: notes,
+          mood_rating: mood,
+          feedback_text: feedback,
+        });
+
+        console.log('AppContext: Session completed in Supabase');
+        
+        // Refresh analytics after session completion
+        await refreshAnalytics();
+      } catch (error) {
+        console.error('AppContext: Error completing session in Supabase:', error);
+      }
+    }
+  }, [authUser, isGuestMode, state.session.supabaseSessionId, refreshAnalytics]);
+
+  const syncSoundsToSupabase = useCallback(async () => {
+    if (!authUser || isGuestMode || !state.isInitialized) return;
+
+    try {
+      await dataService.updateUserSettings(authUser.id, {
+        sounds_master: state.sounds.master,
+        sounds_haptics: state.sounds.haptics,
+        sounds_ticking: state.sounds.ticking.enabled,
+        sounds_breathing: state.sounds.breathing.enabled,
+        sounds_nature: state.sounds.nature.enabled,
+        sound_ticking_type: state.sounds.ticking.selectedSound,
+        sound_breathing_type: state.sounds.breathing.selectedSound,
+        sound_nature_type: state.sounds.nature.selectedSound,
+      });
+      console.log('AppContext: Sounds synced to Supabase');
+    } catch (error) {
+      console.error('AppContext: Error syncing sounds to Supabase:', error);
+    }
+  }, [authUser, isGuestMode, state.sounds, state.isInitialized]);
+
+  const updateClockStyle = useCallback(async (style: ClockStyle) => {
+    dispatch({ type: 'UPDATE_CLOCK_STYLE', payload: style });
+
+    if (authUser && !isGuestMode) {
+      try {
+        await dataService.updateUserSettings(authUser.id, {
+          clock_style: style,
+        });
+        console.log('AppContext: Clock style synced to Supabase');
+      } catch (error) {
+        console.error('AppContext: Error syncing clock style:', error);
+      }
+    }
+  }, [authUser, isGuestMode]);
+
+  const actions = useMemo(() => ({
+    startSession,
+    endSession,
+    refreshAnalytics,
+    syncSoundsToSupabase,
+    updateClockStyle,
+  }), [startSession, endSession, refreshAnalytics, syncSoundsToSupabase, updateClockStyle]);
+
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
+    <AppContext.Provider value={{ state, dispatch, actions }}>
       {children}
     </AppContext.Provider>
   );

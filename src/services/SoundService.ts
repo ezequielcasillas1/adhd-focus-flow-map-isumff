@@ -1,31 +1,24 @@
 
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
+import { freesoundAPI } from './FreesoundAPI';
 
 /**
- * PRODUCTION IMPLEMENTATION NOTES:
+ * SOUND SERVICE - Audio Playback Implementation
  * 
- * To implement actual sound playback in production, you need to:
+ * This service handles audio playback for focus sounds (ticking, breathing, nature).
+ * Sounds are streamed from URLs on-demand when first played.
  * 
- * 1. Download the sound files from the provided URLs and add them to your project:
- *    - Create an assets/sounds/ directory
- *    - Download each sound file and save with appropriate names
- *    - Update the SOUND_LIBRARY to reference local files instead of URLs
+ * Features:
+ * - Background playback (configured in app.json with UIBackgroundModes: ["audio"])
+ * - Audio mixing with other apps (users can play music while using focus sounds)
+ * - On-demand loading (sounds loaded when first played, cached thereafter)
+ * - Looping support for ambient sounds
  * 
- * 2. Update the loadSound method to use Audio.Sound.createAsync:
- *    const { sound } = await Audio.Sound.createAsync(require('./assets/sounds/filename.mp3'));
- * 
- * 3. For streaming from URLs (less reliable but possible):
- *    const { sound } = await Audio.Sound.createAsync({ uri: soundDef.url });
- * 
- * 4. The current implementation logs all actions for demonstration purposes.
- *    In production, replace console.log statements with actual audio playback.
- * 
- * 5. Background playback is configured in app.json with UIBackgroundModes: ["audio"]
- *    and in the Audio.setAudioModeAsync call with staysActiveInBackground: true
- * 
- * 6. The interruptionMode settings allow mixing with other apps' audio,
- *    so users can play music from other apps while using focus sounds.
+ * Note: For better performance and offline support, consider:
+ * - Downloading sound files to assets/sounds/ directory
+ * - Using require() instead of URI streaming
+ * - Implementing sound caching with expo-file-system
  */
 
 // Sound definitions with URLs and metadata
@@ -37,115 +30,200 @@ export interface SoundDefinition {
   category: 'breathing' | 'ticking' | 'nature';
 }
 
+// Map Freesound IDs to our sound definitions
 export const SOUND_LIBRARY: SoundDefinition[] = [
-  // Breathing sounds
+  // Breathing sounds - Freesound.org
   {
     id: 'breathing-deep-calm',
     title: 'Deep Calm Breathing',
     description: 'Slow, deep breathing sounds for relaxation and focus',
-    url: 'https://freesound.org/people/dynamique/sounds/554735/',
+    url: '554735.mp3', // Freesound ID
     category: 'breathing'
   },
   {
     id: 'breathing-gentle-waves',
     title: 'Gentle Wave Breathing',
     description: 'Soft breathing pattern like gentle ocean waves',
-    url: 'https://freesound.org/people/fuchsrodolfo/sounds/391175/',
+    url: '391175.mp3', // Freesound ID
     category: 'breathing'
   },
   {
     id: 'breathing-meditative',
     title: 'Meditative Breathing',
     description: 'Peaceful meditative breathing for deep concentration',
-    url: 'https://freesound.org/people/giddster/sounds/336532/',
+    url: '336532.mp3', // Freesound ID
+    category: 'breathing'
+  },
+  {
+    id: 'breathing-woman-sigh',
+    title: 'Woman Breathing & Sighing',
+    description: 'Middle-aged woman breathing and sighing naturally',
+    url: '218311.mp3', // Freesound ID: SpliceSound
+    category: 'breathing'
+  },
+  {
+    id: 'breathing-woman-nose',
+    title: 'Woman Breathing Through Nose',
+    description: 'Natural female nose breathing for calm focus',
+    url: '112556.mp3', // Freesound ID: nickrave
+    category: 'breathing'
+  },
+  {
+    id: 'breathing-woman-mouth',
+    title: 'Woman Breathing Through Mouth',
+    description: 'Natural female mouth breathing pattern',
+    url: '112555.mp3', // Freesound ID: nickrave
+    category: 'breathing'
+  },
+  {
+    id: 'breathing-woman-outofbreath',
+    title: 'Woman Out of Breath (Slow)',
+    description: 'Young woman breathing slowly after exertion',
+    url: '667286.mp3', // Freesound ID: pekena_larva
+    category: 'breathing'
+  },
+  {
+    id: 'breathing-man-stereo',
+    title: 'Man Breathing (Stereo)',
+    description: 'Male breathing recorded in stereo, close proximity',
+    url: '749673.mp3', // Freesound ID: SgtPepperArc360
+    category: 'breathing'
+  },
+  {
+    id: 'breathing-man-heavy',
+    title: 'Man Heavy Breathing',
+    description: 'Male breathing heavily, deep and pronounced',
+    url: '410969.mp3', // Freesound ID: MihirFreeSound
+    category: 'breathing'
+  },
+  {
+    id: 'breathing-woman-calm',
+    title: 'Woman Calm Breathing',
+    description: 'Natural woman breathing with calm, steady rhythm',
+    url: '327806.mp3', // Freesound ID: Fluffayfish
+    category: 'breathing'
+  },
+  {
+    id: 'breathing-underwater',
+    title: 'Underwater Breathing',
+    description: 'Breathing with underwater atmosphere and bubble effects',
+    url: '324562.mp3', // Freesound ID: univ_lyon3
     category: 'breathing'
   },
   
-  // Ticking sounds
+  // Ticking sounds - Freesound.org
   {
     id: 'ticking-classic-clock',
     title: 'Classic Clock Tick',
     description: 'Traditional clock ticking sound for time awareness',
-    url: 'https://freesound.org/people/knufds/sounds/490323/',
+    url: '490323.mp3', // Freesound ID
     category: 'ticking'
   },
   {
     id: 'ticking-vintage-metronome',
     title: 'Vintage Metronome',
     description: 'Rhythmic metronome ticking for steady focus',
-    url: 'https://freesound.org/people/DiArchangeli/sounds/462929/',
+    url: '462929.mp3', // Freesound ID
     category: 'ticking'
   },
   {
     id: 'ticking-modern-digital',
     title: 'Modern Digital Tick',
     description: 'Clean digital ticking sound for contemporary focus',
-    url: 'https://freesound.org/people/RandomRecord19/sounds/673790/',
+    url: '673790.mp3', // Freesound ID
     category: 'ticking'
   },
   {
     id: 'ticking-soft-wooden',
     title: 'Soft Wooden Clock',
     description: 'Gentle wooden clock ticking for ambient focus',
-    url: 'https://freesound.org/people/ST303/sounds/171043/',
+    url: '171043.mp3', // Freesound ID
     category: 'ticking'
   },
   {
     id: 'ticking-subtle-pulse',
     title: 'Subtle Pulse Tick',
     description: 'Minimal pulsing tick for background timing',
-    url: 'https://freesound.org/people/nightcustard/sounds/675679/',
+    url: '675679.mp3', // Freesound ID
     category: 'ticking'
   },
   {
     id: 'ticking-mechanical-watch',
     title: 'Mechanical Watch',
     description: 'Precise mechanical watch ticking for structured focus',
-    url: 'https://freesound.org/people/urbaneguerilla/sounds/161443/',
+    url: '161443.mp3', // Freesound ID
     category: 'ticking'
   },
   
-  // Nature sounds
+  // Nature sounds - Freesound.org
+  {
+    id: 'nature-ocean-waves',
+    title: 'Ocean Waves',
+    description: 'Rhythmic ocean waves for natural relaxation',
+    url: '386454.mp3', // Freesound ID (corrected)
+    category: 'nature'
+  },
   {
     id: 'nature-forest-ambience',
     title: 'Forest Ambience',
     description: 'Peaceful forest sounds with birds and rustling leaves',
-    url: 'https://freesound.org/people/DudeAwesome/sounds/386454/',
+    url: '759738.mp3', // Freesound ID (corrected)
     category: 'nature'
   },
   {
     id: 'nature-gentle-rain',
     title: 'Gentle Rain',
     description: 'Soft rainfall sounds for calming background ambience',
-    url: 'https://freesound.org/people/Garuda1982/sounds/737002/',
-    category: 'nature'
-  },
-  {
-    id: 'nature-ocean-waves',
-    title: 'Ocean Waves',
-    description: 'Rhythmic ocean waves for natural relaxation',
-    url: 'https://freesound.org/people/Garuda1982/sounds/759738/',
+    url: '398742.mp3', // Freesound ID (moved from old wind chimes)
     category: 'nature'
   },
   {
     id: 'nature-mountain-stream',
     title: 'Mountain Stream',
     description: 'Flowing water sounds from a peaceful mountain stream',
-    url: 'https://freesound.org/people/ricardoemfield/sounds/734108/',
+    url: '734108.mp3', // Freesound ID
     category: 'nature'
   },
   {
     id: 'nature-spa-ambience',
     title: 'Spa Ambience',
     description: 'Tranquil spa environment sounds for deep relaxation',
-    url: 'https://freesound.org/people/naturesoundspa/sounds/163597/',
+    url: '163597.mp3', // Freesound ID
     category: 'nature'
   },
   {
     id: 'nature-wind-chimes',
     title: 'Wind Chimes',
-    description: 'Gentle wind chimes for peaceful meditation',
-    url: 'https://freesound.org/people/Anthousai/sounds/398742/',
+    description: 'Metal wind chimes swayed at different speeds',
+    url: '541113.mp3', // Freesound ID: Chelly01
+    category: 'nature'
+  },
+  {
+    id: 'nature-wind-chimes-relaxing',
+    title: 'Relaxing Wind Chimes',
+    description: 'Evening wind chimes for purifying and enhancing energy',
+    url: '560543.mp3', // Freesound ID: SterckxS
+    category: 'nature'
+  },
+  {
+    id: 'nature-wind-chimes-gregorian',
+    title: 'Gregorian Wind Chimes',
+    description: 'Gregorian wind chimes playing gently in the wind',
+    url: '529016.mp3', // Freesound ID: SiriusParsec
+    category: 'nature'
+  },
+  {
+    id: 'nature-wind-chimes-binaural',
+    title: 'Binaural Wind Chimes',
+    description: 'Ambisonic-derived binaural wind chimes with yard sounds (use headphones)',
+    url: '799569.mp3', // Freesound ID: lonemonk
+    category: 'nature'
+  },
+  {
+    id: 'nature-wind-chimes-playground',
+    title: 'Playground Wind Chimes',
+    description: 'Distant wind chimes with meditative far background ambience',
+    url: '521026.mp3', // Freesound ID: Profispiesser
     category: 'nature'
   }
 ];
@@ -163,32 +241,26 @@ export class SoundService {
       // Configure audio for background playback and mixing with other apps
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
-        staysActiveInBackground: true, // Enable background playback
+        staysActiveInBackground: true,
         playsInSilentModeIOS: true,
-        shouldDuckAndroid: true, // Duck other audio on Android
+        shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
-        interruptionModeIOS: 'mixWithOthers', // Fixed: Use string literal instead of deprecated constant
-        interruptionModeAndroid: 'duckOthers', // Fixed: Use string literal instead of deprecated constant
+        interruptionModeIOS: Audio.InterruptionModeIOS.MixWithOthers,
+        interruptionModeAndroid: Audio.InterruptionModeAndroid.DuckOthers,
       });
       this.isInitialized = true;
       console.log('SoundService: Initialized successfully with background playback');
     } catch (error) {
       console.log('SoundService: Error initializing audio:', error);
-    }
-  }
-
-  async preloadSounds() {
-    console.log('SoundService: Preloading sounds from library');
-    
-    for (const soundDef of SOUND_LIBRARY) {
+      // Try without background/interruption settings
       try {
-        // Note: In a production app, you would download and cache these files locally
-        // For now, we'll prepare the sound objects but not load the actual audio
-        console.log(`SoundService: Prepared ${soundDef.title} (${soundDef.category})`);
-        console.log(`  Description: ${soundDef.description}`);
-        console.log(`  URL: ${soundDef.url}`);
-      } catch (error) {
-        console.log(`SoundService: Error preparing ${soundDef.title}:`, error);
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+        });
+        this.isInitialized = true;
+        console.log('SoundService: Initialized with basic audio mode');
+      } catch (fallbackError) {
+        console.log('SoundService: Fallback initialization failed:', fallbackError);
       }
     }
   }
@@ -205,16 +277,27 @@ export class SoundService {
     }
 
     try {
-      // In a production app, you would load from the actual URL or local file
-      // For now, we'll create a placeholder sound object
-      console.log(`SoundService: Loading ${soundDef.title} from ${soundDef.url}`);
+      console.log(`SoundService: Loading ${soundDef.title} - fetching from Freesound...`);
       
-      // Note: This is where you would actually load the sound file
-      // const { sound } = await Audio.Sound.createAsync({ uri: soundDef.url });
-      // this.sounds[soundId] = sound;
+      // Get sound URL from Freesound API (via Supabase Edge Function)
+      const freesoundId = soundDef.url.replace('.mp3', '');
+      const soundData = await freesoundAPI.getSound(freesoundId);
       
-      console.log(`SoundService: Successfully loaded ${soundDef.title}`);
-      return null; // Return null for now since we're not loading actual files
+      if (!soundData || !soundData.downloadUrl) {
+        throw new Error(`Failed to get sound URL from Freesound API`);
+      }
+      
+      console.log(`SoundService: Got CDN URL, loading audio for ${soundDef.title}...`);
+      
+      // Stream directly from Freesound CDN URL
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: soundData.downloadUrl },
+        { shouldPlay: false, isLooping: false }
+      );
+      
+      this.sounds[soundId] = sound;
+      console.log(`SoundService: Successfully loaded ${soundDef.title} from Freesound CDN`);
+      return sound;
     } catch (error) {
       console.log(`SoundService: Error loading ${soundDef.title}:`, error);
       return null;
@@ -233,46 +316,128 @@ export class SoundService {
       return;
     }
 
-    console.log(`SoundService: Playing ${soundDef.title}`);
-    console.log(`  Category: ${soundDef.category}`);
-    console.log(`  Description: ${soundDef.description}`);
-    console.log(`  URL: ${soundDef.url}`);
-    console.log(`  Loop: ${loop}`);
+    // Stop if already playing
+    if (this.currentlyPlaying.has(soundId)) {
+      console.log(`SoundService: ${soundDef.title} already playing, stopping first...`);
+      await this.stopSound(soundId);
+    }
+
+    console.log(`SoundService: Playing ${soundDef.title} (loop: ${loop})`);
     
     try {
       // Load the sound if not already loaded
       const sound = await this.loadSound(soundId);
       
       if (sound) {
+        // CRITICAL: Set looping BEFORE playing
         await sound.setIsLoopingAsync(loop);
+        
+        // Start at volume 0 for fade in
+        await sound.setVolumeAsync(0);
         await sound.playAsync();
         this.currentlyPlaying.add(soundId);
-        console.log(`SoundService: ${soundDef.title} is now playing`);
+        
+        // Fade in over 1 second (1000ms)
+        this.fadeIn(sound, 1000);
+        
+        console.log(`SoundService: ✅ ${soundDef.title} is now playing ${loop ? '(LOOPING)' : '(ONCE)'} with fade in`);
       } else {
-        // Simulate playing for demo purposes
-        this.currentlyPlaying.add(soundId);
-        console.log(`SoundService: Simulating playback of ${soundDef.title}`);
+        console.log(`SoundService: ❌ Failed to load ${soundDef.title}, cannot play`);
       }
     } catch (error) {
-      console.log(`SoundService: Error playing ${soundDef.title}:`, error);
+      console.log(`SoundService: ❌ Error playing ${soundDef.title}:`, error);
     }
+  }
+
+  private fadeIn(sound: Audio.Sound, duration: number) {
+    const steps = 20; // Number of volume steps
+    const stepDuration = duration / steps;
+    const volumeIncrement = 1 / steps;
+    
+    let currentStep = 0;
+    const fadeInterval = setInterval(async () => {
+      currentStep++;
+      const newVolume = Math.min(currentStep * volumeIncrement, 1);
+      
+      try {
+        await sound.setVolumeAsync(newVolume);
+      } catch (error) {
+        clearInterval(fadeInterval);
+      }
+      
+      if (currentStep >= steps) {
+        clearInterval(fadeInterval);
+      }
+    }, stepDuration);
   }
 
   async stopSound(soundId: string) {
     const soundDef = SOUND_LIBRARY.find(s => s.id === soundId);
     const soundName = soundDef ? soundDef.title : soundId;
     
-    console.log(`SoundService: Stopping ${soundName}`);
+    console.log(`SoundService: 🛑 Stopping ${soundName}...`);
     
     try {
       if (this.sounds[soundId]) {
-        await this.sounds[soundId].stopAsync();
+        console.log(`SoundService: Found sound in cache, stopping...`);
+        const sound = this.sounds[soundId];
+        
+        // Get current status to check if it's actually playing
+        const status = await sound.getStatusAsync();
+        console.log(`SoundService: Sound status:`, status.isLoaded ? 'loaded' : 'not loaded', status.isLoaded && status.isPlaying ? 'playing' : 'not playing');
+        
+        // Fade out and stop if playing
+        if (status.isLoaded && status.isPlaying) {
+          await this.fadeOut(sound, 1000);
+          await sound.stopAsync();
+          console.log(`SoundService: ✅ Stopped playback with fade out`);
+        }
+        
+        // Unload to free resources
+        await sound.unloadAsync();
+        console.log(`SoundService: ✅ Unloaded from memory`);
+        
+        delete this.sounds[soundId];
+      } else {
+        console.log(`SoundService: ⚠️ Sound not found in cache (may have already been stopped)`);
       }
+      
       this.currentlyPlaying.delete(soundId);
-      console.log(`SoundService: ${soundName} stopped`);
+      console.log(`SoundService: ✅ ${soundName} fully stopped`);
     } catch (error) {
-      console.log(`SoundService: Error stopping ${soundName}:`, error);
+      console.log(`SoundService: ❌ Error stopping ${soundName}:`, error);
+      // Force remove from tracking even if stop failed
+      this.currentlyPlaying.delete(soundId);
+      if (this.sounds[soundId]) {
+        delete this.sounds[soundId];
+      }
     }
+  }
+
+  private async fadeOut(sound: Audio.Sound, duration: number): Promise<void> {
+    return new Promise((resolve) => {
+      const steps = 20; // Number of volume steps
+      const stepDuration = duration / steps;
+      const volumeDecrement = 1 / steps;
+      
+      let currentStep = 0;
+      const fadeInterval = setInterval(async () => {
+        currentStep++;
+        const newVolume = Math.max(1 - (currentStep * volumeDecrement), 0);
+        
+        try {
+          await sound.setVolumeAsync(newVolume);
+        } catch (error) {
+          clearInterval(fadeInterval);
+          resolve();
+        }
+        
+        if (currentStep >= steps) {
+          clearInterval(fadeInterval);
+          resolve();
+        }
+      }, stepDuration);
+    });
   }
 
   async forceStopAll() {
@@ -282,12 +447,15 @@ export class SoundService {
       try {
         if (this.sounds[soundId]) {
           await this.sounds[soundId].stopAsync();
+          await this.sounds[soundId].unloadAsync();
+          delete this.sounds[soundId];
         }
       } catch (error) {
         console.log(`SoundService: Error force stopping ${soundId}:`, error);
       }
     }
     this.currentlyPlaying.clear();
+    console.log('SoundService: All sounds stopped and unloaded');
   }
 
   setMasterEnabled(enabled: boolean) {

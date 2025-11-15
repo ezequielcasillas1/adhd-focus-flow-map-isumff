@@ -53,7 +53,7 @@ export interface SessionAnalytics {
   averageSessionLength: number; // in minutes
   currentStreak: number;
   bestStreak: number;
-  weeklyProgress: number[]; // 7 days, in minutes
+  weeklyProgress: number[]; // 7 days, 1 if session exists that day, 0 otherwise
   monthlyProgress: number[]; // 30 days, in minutes
   averageEfficiency: number;
   averageMood: number;
@@ -316,7 +316,12 @@ class DataService {
   async getSessionAnalytics(userId: string): Promise<SessionAnalytics> {
     try {
       const sessions = await this.getUserSessions(userId);
-      const completedSessions = sessions.filter(s => s.completed_at !== null);
+      // Filter completed sessions that are >= 30 minutes (1800 seconds)
+      const completedSessions = sessions.filter(s => 
+        s.completed_at !== null && 
+        s.actual_duration !== null && 
+        s.actual_duration >= 1800
+      );
       
       // Calculate basic metrics
       const totalSessions = completedSessions.length;
@@ -461,7 +466,7 @@ class DataService {
   }
 
   private calculateWeeklyProgress(sessions: SessionRecord[]): number[] {
-    const weeklyProgress = [0, 0, 0, 0, 0, 0, 0]; // Sunday to Saturday
+    const weeklyProgress = [0, 0, 0, 0, 0, 0, 0]; // Sunday to Saturday (session count per day)
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -469,13 +474,25 @@ class DataService {
       session.completed_at && new Date(session.completed_at) >= oneWeekAgo
     );
 
+    // Track unique days with sessions (using Set to avoid double-counting same day)
+    const sessionsPerDay: { [key: number]: Set<string> } = {
+      0: new Set(), 1: new Set(), 2: new Set(), 3: new Set(), 
+      4: new Set(), 5: new Set(), 6: new Set()
+    };
+
     recentSessions.forEach(session => {
       if (session.completed_at && session.actual_duration) {
         const sessionDate = new Date(session.completed_at);
         const dayOfWeek = sessionDate.getDay(); // 0 = Sunday, 6 = Saturday
-        weeklyProgress[dayOfWeek] += Math.round(session.actual_duration / 60); // Convert to minutes
+        const dateKey = sessionDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        sessionsPerDay[dayOfWeek].add(dateKey);
       }
     });
+
+    // Convert sets to counts (1 if any sessions that day, 0 otherwise)
+    for (let day = 0; day < 7; day++) {
+      weeklyProgress[day] = sessionsPerDay[day].size > 0 ? 1 : 0;
+    }
 
     return weeklyProgress;
   }

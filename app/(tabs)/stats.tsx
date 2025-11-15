@@ -10,7 +10,7 @@ import {
   Dimensions 
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import { Stack, useFocusEffect } from "expo-router";
 import { GlassView } from "expo-glass-effect";
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors, commonStyles } from "@/styles/commonStyles";
@@ -29,16 +29,20 @@ export default function StatsScreen() {
     setIsRefreshing(false);
   }, [actions]);
 
-  useEffect(() => {
-    // Refresh analytics when screen loads
-    if (state.isInitialized) {
-      handleRefresh();
-    }
-  }, [state.isInitialized, handleRefresh]);
+  // Refresh analytics when screen comes into focus (navigating to Stats tab)
+  useFocusEffect(
+    useCallback(() => {
+      if (state.isInitialized) {
+        console.log('Stats: Screen focused, refreshing analytics');
+        handleRefresh();
+      }
+    }, [state.isInitialized, handleRefresh])
+  );
 
   const formatTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const totalMinutes = Math.floor(minutes);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
     if (hours > 0) {
       return `${hours}h ${mins}m`;
     }
@@ -424,10 +428,11 @@ const styles = StyleSheet.create({
     }),
   },
   overviewValue: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 4,
+    textAlign: 'center',
   },
   overviewLabel: {
     fontSize: 12,

@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   ScrollView,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
@@ -18,11 +19,13 @@ import { useAppContext } from "@/src/context/AppContext";
 import { soundService } from "@/src/services/SoundService";
 import { clockService } from "@/src/services/ClockService";
 import ClockDisplay from "@/components/ClockDisplay";
+import FullscreenClock from "@/components/FullscreenClock";
 
 export default function SessionScreen() {
   const router = useRouter();
   const { state, dispatch } = useAppContext();
   const [isRunning, setIsRunning] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     // Check if session is already running
@@ -114,12 +117,14 @@ export default function SessionScreen() {
       dispatch({
         type: 'START_SESSION',
         payload: {
-          mode: state.session.mode,
+          mode: 'speed', // Always use speed mode for real-time clock
           targetDuration: 0 // No target duration for real-time clock
         }
       });
       
-      clockService.setMode(state.session.mode);
+      // Set mode to speed first
+      clockService.setMode('speed');
+      // Then set the multiplier and configurations
       clockService.setSpeedMultiplier(state.session.speedSetting);
       clockService.setTimeSlotDuration(state.session.timeSlotDuration || 15);
       clockService.setSlotEveryMinutes(state.session.slotEveryMinutes || 30);
@@ -169,8 +174,29 @@ export default function SessionScreen() {
     soundService.playHaptic('light');
   };
 
+  const handleRefreshSounds = async () => {
+    console.log('Refreshing active sounds');
+    soundService.playHaptic('medium');
+    
+    if (!isRunning || !state.sounds.master) return;
+    
+    // Stop all currently playing sounds
+    await soundService.forceStopAll();
+    
+    // Restart all enabled sounds with their current selections
+    const soundTypes: ('ticking' | 'breathing' | 'nature')[] = ['ticking', 'breathing', 'nature'];
+    for (const soundType of soundTypes) {
+      if (state.sounds[soundType].enabled) {
+        await soundService.playSound(state.sounds[soundType].selectedSound, true);
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={[commonStyles.safeArea]} edges={['top']}>
+      {/* Hide status bar when session is running on iOS */}
+      {Platform.OS === 'ios' && isRunning && <StatusBar hidden={true} />}
+      
       {Platform.OS === 'ios' && (
         <Stack.Screen
           options={{
@@ -272,29 +298,27 @@ export default function SessionScreen() {
                 </View>
               </View>
               
-              {/* Speed Setting (only for speed mode) */}
-              {state.session.mode === 'speed' && (
-                <View style={[commonStyles.silverCard]}>
-                  <Text style={commonStyles.subtitle}>Time Speed Multiplier</Text>
-                  <Text style={styles.description}>
-                    How fast time should advance (higher = faster)
-                  </Text>
-                  <View style={styles.speedButtons}>
-                    {[1.0, 1.5, 2.0, 3.0, 5.0].map((speed) => (
-                      <TouchableOpacity
-                        key={speed}
-                        style={[
-                          styles.speedButton,
-                          state.session.speedSetting === speed && styles.selectedSpeedButton
-                        ]}
-                        onPress={() => handleSpeedChange(speed)}
-                      >
-                        <Text style={styles.speedText}>{speed}x</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+              {/* Time Speed Multiplier */}
+              <View style={[commonStyles.silverCard]}>
+                <Text style={commonStyles.subtitle}>Time Speed Multiplier</Text>
+                <Text style={styles.description}>
+                  How fast time should advance (higher = faster)
+                </Text>
+                <View style={styles.speedButtons}>
+                  {[1, 2, 4, 8].map((speed) => (
+                    <TouchableOpacity
+                      key={speed}
+                      style={[
+                        styles.speedButton,
+                        state.session.speedSetting === speed && styles.selectedSpeedButton
+                      ]}
+                      onPress={() => handleSpeedChange(speed)}
+                    >
+                      <Text style={styles.speedText}>{speed}x</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-              )}
+              </View>
               
               {/* Sound Layers */}
               <View style={[commonStyles.goldCard]}>
@@ -337,7 +361,13 @@ export default function SessionScreen() {
           ) : (
             // Running Session
             <View style={styles.runningContainer}>
-              <ClockDisplay />
+              {/* Tap clock to enter fullscreen mode */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setIsFullscreen(true)}
+              >
+                <ClockDisplay />
+              </TouchableOpacity>
               
               <View style={[commonStyles.silverCard, styles.sessionInfo]}>
                 <Text style={styles.sessionInfoText}>
@@ -350,7 +380,19 @@ export default function SessionScreen() {
               
               {/* Active Sound Layers */}
               <View style={[commonStyles.platinumCard]}>
-                <Text style={commonStyles.subtitle}>Active Sounds</Text>
+                <View style={styles.soundLayerHeader}>
+                  <Text style={commonStyles.subtitle}>Active Sounds</Text>
+                  <TouchableOpacity
+                    style={styles.refreshButton}
+                    onPress={handleRefreshSounds}
+                  >
+                    <IconSymbol 
+                      name="arrow.clockwise" 
+                      color={colors.primary} 
+                      size={20} 
+                    />
+                  </TouchableOpacity>
+                </View>
                 <View style={styles.activeSounds}>
                   {(['ticking', 'breathing', 'nature'] as const).map((soundType) => (
                     <TouchableOpacity
@@ -392,6 +434,12 @@ export default function SessionScreen() {
           )}
         </View>
       </ScrollView>
+      
+      {/* Fullscreen Clock Modal */}
+      <FullscreenClock
+        visible={isFullscreen}
+        onClose={() => setIsFullscreen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -614,6 +662,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     marginVertical: 4,
+  },
+  soundLayerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  refreshButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.metallicPlatinum,
+    boxShadow: '0px 3px 6px rgba(229, 228, 226, 0.3)',
+    elevation: 4,
   },
   activeSounds: {
     flexDirection: 'row',

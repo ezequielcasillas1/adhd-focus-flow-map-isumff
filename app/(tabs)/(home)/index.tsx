@@ -369,12 +369,12 @@ export default function HomeScreen() {
               <View 
                 style={[
                   styles.progressFill, 
-                  { width: `${Math.min((state.progress.weeklyProgress / 7) * 100, 100)}%` }
+                  { width: `${Math.min((state.progress.weeklyProgress.reduce((sum, day) => sum + day, 0) / 7) * 100, 100)}%` }
                 ]} 
               />
             </View>
             <Text style={styles.progressLabel}>
-              {state.progress.weeklyProgress}/7 sessions this week
+              {state.progress.weeklyProgress.reduce((sum, day) => sum + day, 0)} sessions this week
             </Text>
           </View>
 

@@ -123,14 +123,50 @@ const styles = StyleSheet.create({
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [step, setStep] = useState<'request' | 'sent' | 'reset'>('request');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
-  const validateForm = () => {
+  // Check if user has a valid reset token (came from email link)
+  useEffect(() => {
+    const checkResetToken = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      // If there's a session and it's from a password recovery, show reset form
+      if (session) {
+        setIsResettingPassword(true);
+        setStep('reset');
+      }
+    };
+    checkResetToken();
+  }, []);
+
+  const validateEmail = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!email.trim()) {
+      errors.email = 'Please enter your email address';
+      return false;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      errors.email = 'Please enter a valid email address';
+      setValidationErrors(errors);
+      return false;
+    }
+    
+    setValidationErrors({});
+    return true;
+  };
+
+  const validatePasswordForm = () => {
     const errors: {[key: string]: string} = {};
     let isValid = true;
 
@@ -154,8 +190,41 @@ export default function ResetPasswordScreen() {
     return isValid;
   };
 
+  const handleRequestReset = async () => {
+    if (!validateEmail()) return;
+
+    setLoading(true);
+    setValidationErrors({});
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/(auth)/reset-password`,
+      });
+
+      if (error) {
+        console.error('Password reset request error:', error);
+        if (Platform.OS === 'web') {
+          alert(error.message || 'Failed to send reset email');
+        } else {
+          Alert.alert('Error', error.message || 'Failed to send reset email');
+        }
+      } else {
+        setStep('sent');
+      }
+    } catch (error: any) {
+      console.error('Password reset request exception:', error);
+      if (Platform.OS === 'web') {
+        alert(error?.message || 'An unexpected error occurred');
+      } else {
+        Alert.alert('Error', error?.message || 'An unexpected error occurred');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleResetPassword = async () => {
-    if (!validateForm()) return;
+    if (!validatePasswordForm()) return;
 
     setLoading(true);
     setValidationErrors({});
@@ -167,29 +236,213 @@ export default function ResetPasswordScreen() {
 
       if (error) {
         console.error('Password reset error:', error);
-        Alert.alert('Password Reset Failed', error.message || 'An error occurred while resetting your password');
+        if (Platform.OS === 'web') {
+          alert(error.message || 'Failed to reset password');
+        } else {
+          Alert.alert('Password Reset Failed', error.message || 'An error occurred while resetting your password');
+        }
       } else {
-        Alert.alert(
-          'Password Reset Successful!',
-          'Your password has been updated successfully. You can now sign in with your new password.',
-          [
-            {
-              text: 'Continue to Sign In',
-              onPress: () => router.replace('/(auth)/sign-in'),
-            },
-          ]
-        );
+        const message = 'Your password has been updated successfully. You can now sign in with your new password.';
+        if (Platform.OS === 'web') {
+          if (window.confirm(message + '\n\nGo to Sign In?')) {
+            router.replace('/(auth)/sign-in');
+          }
+        } else {
+          Alert.alert(
+            'Password Reset Successful!',
+            message,
+            [
+              {
+                text: 'Continue to Sign In',
+                onPress: () => router.replace('/(auth)/sign-in'),
+              },
+            ]
+          );
+        }
       }
     } catch (error: any) {
       console.error('Password reset exception:', error);
-      Alert.alert(
-        'Password Reset Error',
-        error?.message || 'An unexpected error occurred. Please try again.'
-      );
+      if (Platform.OS === 'web') {
+        alert(error?.message || 'An unexpected error occurred');
+      } else {
+        Alert.alert(
+          'Password Reset Error',
+          error?.message || 'An unexpected error occurred. Please try again.'
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Render email request form
+  const renderRequestForm = () => (
+    <GlassView style={styles.glassCard}>
+      <Text style={styles.title}>Forgot Password?</Text>
+      <Text style={styles.subtitle}>
+        Enter your email address and we'll send you a link to reset your password
+      </Text>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Email Address</Text>
+        <TextInput
+          style={[
+            styles.input,
+            emailFocused && styles.inputFocused,
+            validationErrors.email && styles.inputError,
+          ]}
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (validationErrors.email) {
+              setValidationErrors(prev => ({ ...prev, email: '' }));
+            }
+          }}
+          placeholder="Enter your email address"
+          placeholderTextColor={colors.textSecondary}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          onFocus={() => setEmailFocused(true)}
+          onBlur={() => setEmailFocused(false)}
+        />
+        {validationErrors.email ? (
+          <Text style={styles.errorText}>{validationErrors.email}</Text>
+        ) : null}
+      </View>
+
+      <TouchableOpacity
+        style={[
+          styles.resetButton,
+          loading && styles.resetButtonDisabled
+        ]}
+        onPress={handleRequestReset}
+        disabled={loading}
+      >
+        <Text style={styles.resetButtonText}>
+          {loading ? 'Sending...' : 'Send Reset Link'}
+        </Text>
+      </TouchableOpacity>
+
+      <View style={styles.signInContainer}>
+        <Text style={styles.signInText}>Remember your password?</Text>
+        <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
+          <Text style={styles.signInLink}>Sign In</Text>
+        </TouchableOpacity>
+      </View>
+    </GlassView>
+  );
+
+  // Render confirmation that email was sent
+  const renderSentConfirmation = () => (
+    <GlassView style={styles.glassCard}>
+      <Text style={styles.title}>Check Your Email</Text>
+      <Text style={styles.subtitle}>
+        We've sent a password reset link to {email}. Please check your inbox and click the link to reset your password.
+      </Text>
+
+      <TouchableOpacity
+        style={styles.resetButton}
+        onPress={() => router.push('/(auth)/sign-in')}
+      >
+        <Text style={styles.resetButtonText}>
+          Return to Sign In
+        </Text>
+      </TouchableOpacity>
+
+      <View style={styles.signInContainer}>
+        <Text style={styles.signInText}>Didn't receive the email?</Text>
+        <TouchableOpacity onPress={() => setStep('request')}>
+          <Text style={styles.signInLink}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    </GlassView>
+  );
+
+  // Render password reset form (after clicking email link)
+  const renderResetForm = () => (
+    <GlassView style={styles.glassCard}>
+      <Text style={styles.title}>Reset Password</Text>
+      <Text style={styles.subtitle}>
+        Enter your new password below
+      </Text>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>New Password</Text>
+        <TextInput
+          style={[
+            styles.input,
+            passwordFocused && styles.inputFocused,
+            validationErrors.password && styles.inputError,
+          ]}
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            if (validationErrors.password && text.length >= 6) {
+              setValidationErrors(prev => ({ ...prev, password: '' }));
+            }
+            if (validationErrors.confirmPassword && text === confirmPassword) {
+              setValidationErrors(prev => ({ ...prev, confirmPassword: '' }));
+            }
+          }}
+          placeholder="Enter your new password (min. 6 characters)"
+          placeholderTextColor={colors.textSecondary}
+          secureTextEntry
+          onFocus={() => setPasswordFocused(true)}
+          onBlur={() => setPasswordFocused(false)}
+        />
+        {validationErrors.password ? (
+          <Text style={styles.errorText}>{validationErrors.password}</Text>
+        ) : null}
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Confirm New Password</Text>
+        <TextInput
+          style={[
+            styles.input,
+            confirmPasswordFocused && styles.inputFocused,
+            validationErrors.confirmPassword && styles.inputError,
+          ]}
+          value={confirmPassword}
+          onChangeText={(text) => {
+            setConfirmPassword(text);
+            if (validationErrors.confirmPassword && text === password) {
+              setValidationErrors(prev => ({ ...prev, confirmPassword: '' }));
+            }
+          }}
+          placeholder="Confirm your new password"
+          placeholderTextColor={colors.textSecondary}
+          secureTextEntry
+          onFocus={() => setConfirmPasswordFocused(true)}
+          onBlur={() => setConfirmPasswordFocused(false)}
+        />
+        {validationErrors.confirmPassword ? (
+          <Text style={styles.errorText}>{validationErrors.confirmPassword}</Text>
+        ) : null}
+      </View>
+
+      <TouchableOpacity
+        style={[
+          styles.resetButton,
+          loading && styles.resetButtonDisabled
+        ]}
+        onPress={handleResetPassword}
+        disabled={loading}
+      >
+        <Text style={styles.resetButtonText}>
+          {loading ? 'Updating Password...' : 'Update Password'}
+        </Text>
+      </TouchableOpacity>
+
+      <View style={styles.signInContainer}>
+        <Text style={styles.signInText}>Remember your password?</Text>
+        <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
+          <Text style={styles.signInLink}>Sign In</Text>
+        </TouchableOpacity>
+      </View>
+    </GlassView>
+  );
 
   return (
     <View style={styles.container}>
@@ -210,87 +463,9 @@ export default function ResetPasswordScreen() {
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
         >
-          <GlassView style={styles.glassCard}>
-            <Text style={styles.title}>Reset Password</Text>
-            <Text style={styles.subtitle}>
-              Enter your new password below
-            </Text>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>New Password</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  passwordFocused && styles.inputFocused,
-                  validationErrors.password && styles.inputError,
-                ]}
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (validationErrors.password && text.length >= 6) {
-                    setValidationErrors(prev => ({ ...prev, password: '' }));
-                  }
-                  if (validationErrors.confirmPassword && text === confirmPassword) {
-                    setValidationErrors(prev => ({ ...prev, confirmPassword: '' }));
-                  }
-                }}
-                placeholder="Enter your new password (min. 6 characters)"
-                placeholderTextColor={colors.textSecondary}
-                secureTextEntry
-                onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(false)}
-              />
-              {validationErrors.password ? (
-                <Text style={styles.errorText}>{validationErrors.password}</Text>
-              ) : null}
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm New Password</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  confirmPasswordFocused && styles.inputFocused,
-                  validationErrors.confirmPassword && styles.inputError,
-                ]}
-                value={confirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  if (validationErrors.confirmPassword && text === password) {
-                    setValidationErrors(prev => ({ ...prev, confirmPassword: '' }));
-                  }
-                }}
-                placeholder="Confirm your new password"
-                placeholderTextColor={colors.textSecondary}
-                secureTextEntry
-                onFocus={() => setConfirmPasswordFocused(true)}
-                onBlur={() => setConfirmPasswordFocused(false)}
-              />
-              {validationErrors.confirmPassword ? (
-                <Text style={styles.errorText}>{validationErrors.confirmPassword}</Text>
-              ) : null}
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.resetButton,
-                loading && styles.resetButtonDisabled
-              ]}
-              onPress={handleResetPassword}
-              disabled={loading}
-            >
-              <Text style={styles.resetButtonText}>
-                {loading ? 'Updating Password...' : 'Update Password'}
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.signInContainer}>
-              <Text style={styles.signInText}>Remember your password?</Text>
-              <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
-                <Text style={styles.signInLink}>Sign In</Text>
-              </TouchableOpacity>
-            </View>
-          </GlassView>
+          {step === 'request' && renderRequestForm()}
+          {step === 'sent' && renderSentConfirmation()}
+          {step === 'reset' && renderResetForm()}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

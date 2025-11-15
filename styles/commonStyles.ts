@@ -1,5 +1,21 @@
 
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle, Platform } from 'react-native';
+
+// Google Fonts
+export const fonts = {
+  ui: Platform.select({
+    web: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    default: 'System',
+  }),
+  clock: Platform.select({
+    web: 'Orbitron, "Courier New", monospace',
+    default: 'System',
+  }),
+  mono: Platform.select({
+    web: '"Roboto Mono", "Courier New", monospace',
+    default: 'monospace',
+  }),
+};
 
 export const colors = {
   background: '#F5F5DC', // Beige
@@ -98,28 +114,33 @@ export const commonStyles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: fonts.ui,
     color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 20,
     fontWeight: '600',
+    fontFamily: fonts.ui,
     color: colors.text,
     marginBottom: 12,
   },
   text: {
     fontSize: 16,
+    fontFamily: fonts.ui,
     color: colors.text,
     lineHeight: 24,
   },
   textSecondary: {
     fontSize: 14,
+    fontFamily: fonts.ui,
     color: colors.textSecondary,
     lineHeight: 20,
   },
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: fonts.ui,
     color: colors.text,
   },
   button: {

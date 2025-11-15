@@ -226,6 +226,12 @@ export class ClockService {
     // Apply speed multiplier to the elapsed time
     const speedAdjustedElapsedMs = sessionElapsedMs * this.speedMultiplier;
     
+    // Debug log every 10 seconds
+    const elapsedSeconds = Math.floor(sessionElapsedMs / 1000);
+    if (elapsedSeconds % 10 === 0 && elapsedSeconds > 0) {
+      console.log(`ClockService: Multiplier=${this.speedMultiplier}x, Real=${elapsedSeconds}s, Adjusted=${Math.floor(speedAdjustedElapsedMs/1000)}s`);
+    }
+    
     // Start with the real time when session began
     const baseTime = this.sessionStartTime.getTime();
     

@@ -145,3 +145,7 @@ eas build --profile development --platform ios
 This gives you Expo Go-like functionality with your custom native code included.
 
 
+
+
+
+

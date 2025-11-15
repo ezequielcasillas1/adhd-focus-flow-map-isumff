@@ -106,26 +106,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       console.log('AuthContext: Starting sign out process...');
       
-      // Clear guest mode
+      // Clear guest mode or Supabase session
       if (isGuestMode) {
         await AsyncStorage.removeItem(GUEST_MODE_KEY);
         setIsGuestMode(false);
         console.log('AuthContext: Guest mode cleared');
       } else {
-        // Sign out from Supabase
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          console.error('AuthContext: Error signing out:', error);
-          throw error;
+        // Check if there's an active session before attempting signOut
+        try {
+          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.log('AuthContext: Error checking session, assuming no session:', sessionError.message);
+          } else if (currentSession) {
+            console.log('AuthContext: Active session found, signing out from Supabase...');
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+              console.log('AuthContext: Error during signOut (non-fatal):', error.message);
+              // Don't throw - still want to clear local state
+            } else {
+              console.log('AuthContext: Supabase sign out successful');
+            }
+          } else {
+            console.log('AuthContext: No active session found (already signed out on another device)');
+          }
+        } catch (sessionCheckError) {
+          console.log('AuthContext: Exception checking session, continuing with local cleanup:', sessionCheckError);
+          // Continue to clear local state anyway
         }
-        console.log('AuthContext: Sign out successful');
       }
       
-      // Navigate to welcome screen after successful sign out
-      router.replace('/(auth)/welcome');
-    } catch (error) {
-      console.error('AuthContext: Exception during sign out:', error);
-      throw error;
+      // Always clear local state, even if no session or signOut failed
+      setSession(null);
+      setUser(null);
+      
+      // Navigate to sign-in page
+      console.log('AuthContext: Navigating to sign-in page...');
+      router.replace('/(auth)/sign-in');
+    } catch (error: any) {
+      // Use console.log instead of console.error to prevent red error screen
+      console.log('AuthContext: Exception during sign out (handled):', error?.message || error);
+      // Still clear local state and navigate even if there was an error
+      setSession(null);
+      setUser(null);
+      router.replace('/(auth)/sign-in');
     }
   };
 

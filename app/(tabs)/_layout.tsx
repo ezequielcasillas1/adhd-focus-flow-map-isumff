@@ -22,6 +22,12 @@ export default function TabLayout() {
       label: 'Session',
     },
     {
+      name: 'sounds',
+      route: '/(tabs)/sounds',
+      icon: 'speaker.wave.3.fill',
+      label: 'Sounds',
+    },
+    {
       name: 'settings',
       route: '/(tabs)/settings',
       icon: 'gear',
@@ -47,6 +53,10 @@ export default function TabLayout() {
           <Icon sf="timer" drawable="ic_timer" />
           <Label>Session</Label>
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="sounds">
+          <Icon sf="speaker.wave.3.fill" drawable="ic_sounds" />
+          <Label>Sounds</Label>
+        </NativeTabs.Trigger>
         <NativeTabs.Trigger name="settings">
           <Icon sf="gear" drawable="ic_settings" />
           <Label>Settings</Label>
@@ -70,8 +80,10 @@ export default function TabLayout() {
       >
         <Stack.Screen name="(home)" />
         <Stack.Screen name="session" />
+        <Stack.Screen name="sounds" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="profile" />
+        <Stack.Screen name="stats" />
       </Stack>
       <FloatingTabBar tabs={tabs} />
     </>

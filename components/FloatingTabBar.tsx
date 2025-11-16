@@ -6,18 +6,13 @@ import {
   StyleSheet,
   Platform,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '@react-navigation/native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  interpolate,
-} from 'react-native-reanimated';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -44,7 +39,7 @@ export default function FloatingTabBar({
   const router = useRouter();
   const pathname = usePathname();
   const theme = useTheme();
-  const animatedValue = useSharedValue(0);
+  const animatedValue = React.useRef(new Animated.Value(0)).current;
 
   // Improved active tab detection with better path matching
   const activeTabIndex = React.useMemo(() => {
@@ -84,11 +79,13 @@ export default function FloatingTabBar({
 
   React.useEffect(() => {
     if (activeTabIndex >= 0) {
-      animatedValue.value = withSpring(activeTabIndex, {
+      Animated.spring(animatedValue, {
+        toValue: activeTabIndex,
         damping: 20,
         stiffness: 120,
         mass: 1,
-      });
+        useNativeDriver: true,
+      }).start();
     }
   }, [activeTabIndex, animatedValue]);
 
@@ -98,20 +95,17 @@ export default function FloatingTabBar({
 
   // Remove unnecessary tabBarStyle animation to prevent flickering
 
-  const indicatorStyle = useAnimatedStyle(() => {
-    const tabWidth = (containerWidth - 16) / tabs.length; // Account for container padding (8px on each side)
-    return {
-      transform: [
-        {
-          translateX: interpolate(
-            animatedValue.value,
-            [0, tabs.length - 1],
-            [0, tabWidth * (tabs.length - 1)]
-          ),
-        },
-      ],
-    };
-  });
+  const tabWidth = (containerWidth - 16) / tabs.length; // Account for container padding (8px on each side)
+  const indicatorStyle = {
+    transform: [
+      {
+        translateX: animatedValue.interpolate({
+          inputRange: [0, tabs.length - 1],
+          outputRange: [0, tabWidth * (tabs.length - 1)],
+        }),
+      },
+    ],
+  };
 
   // Dynamic styles based on theme
   const dynamicStyles = {

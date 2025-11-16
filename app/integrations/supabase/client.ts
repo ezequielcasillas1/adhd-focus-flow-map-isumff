@@ -3,11 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 import { env } from '../../config/environment';
 import type { Database } from './types';
 
-console.log('Supabase Client: Initializing with config:', {
-  url: env.supabaseUrl,
-  hasAnonKey: !!env.supabaseAnonKey,
-  keyPrefix: env.supabaseAnonKey?.substring(0, 20) + '...'
-});
+if (__DEV__) {
+  console.log('Supabase Client: Initializing with config:', {
+    url: env.supabaseUrl,
+    hasAnonKey: !!env.supabaseAnonKey,
+    keyPrefix: env.supabaseAnonKey?.substring(0, 20) + '...'
+  });
+}
 
 export const supabase = createClient<Database>(
   env.supabaseUrl,
@@ -26,4 +28,6 @@ export const supabase = createClient<Database>(
   }
 );
 
-console.log('Supabase Client: Initialized successfully');
+if (__DEV__) {
+  console.log('Supabase Client: Initialized successfully');
+}

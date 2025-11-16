@@ -13,7 +13,7 @@ import { Stack, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { GlassView } from 'expo-glass-effect';
+import { BlurView } from 'expo-blur';
 
 const { width, height } = Dimensions.get('window');
 
@@ -154,7 +154,7 @@ export default function WelcomeScreen() {
           </Text>
         </View>
 
-        <GlassView style={styles.glassCard}>
+        <BlurView intensity={80} style={styles.glassCard}>
           <View style={styles.featuresContainer}>
             {features.map((feature, index) => (
               <View key={index} style={styles.feature}>
@@ -169,7 +169,7 @@ export default function WelcomeScreen() {
               </View>
             ))}
           </View>
-        </GlassView>
+        </BlurView>
 
         <View style={styles.buttonsContainer}>
           <TouchableOpacity

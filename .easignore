@@ -1,0 +1,16 @@
+# EAS Build Ignore File
+# These files and directories will be excluded from the build upload
+
+.expo/
+tests/
+node_modules/
+.git/
+.netlify/
+.natively/
+dist/
+web-build/
+*.log
+*.tsbuildinfo
+android/
+ios/
+

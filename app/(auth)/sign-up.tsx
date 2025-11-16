@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { GlassView } from 'expo-glass-effect';
+import { BlurView } from 'expo-blur';
 import { supabase } from '@/app/integrations/supabase/client';
 // Google Sign-in temporarily disabled for Expo Go compatibility
 // Uncomment when building with EAS or using expo-dev-client:
@@ -451,7 +451,7 @@ export default function SignUpScreen() {
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
         >
-          <GlassView style={styles.glassCard}>
+          <BlurView intensity={80} style={styles.glassCard}>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>
               Join us and start your focus journey
@@ -643,7 +643,7 @@ export default function SignUpScreen() {
                 <Text style={styles.signInLink}>Sign In</Text>
               </TouchableOpacity>
             </View>
-          </GlassView>
+          </BlurView>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

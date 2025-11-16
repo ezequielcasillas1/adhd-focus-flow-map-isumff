@@ -22,12 +22,14 @@ const getEnvironment = (): Environment => {
   const actualSupabaseUrl = supabaseUrl || 'https://brwhhkmjyadcaasqggtd.supabase.co';
   const actualSupabaseAnonKey = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2hoa21qeWFkY2Fhc3FnZ3RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc3MTksImV4cCI6MjA3NTQ4MzcxOX0.lxygT-dYwguqyuHmSW2S2wUcAJf-uY25opKRs9yNXWY';
 
-  console.log('Environment configuration:', {
-    supabaseUrl: actualSupabaseUrl,
-    hasAnonKey: !!actualSupabaseAnonKey,
-    isDevelopment,
-    isProduction
-  });
+  if (__DEV__) {
+    console.log('Environment configuration:', {
+      supabaseUrl: actualSupabaseUrl,
+      hasAnonKey: !!actualSupabaseAnonKey,
+      isDevelopment,
+      isProduction
+    });
+  }
 
   return {
     supabaseUrl: actualSupabaseUrl,

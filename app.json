@@ -43,7 +43,9 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-av",
+      "expo-symbols"
     ],
     "scheme": "flowfocus",
     "experiments": {

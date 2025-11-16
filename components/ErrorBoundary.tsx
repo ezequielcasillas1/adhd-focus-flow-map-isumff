@@ -87,6 +87,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
+  glassEffect: {
+    backgroundColor: 'rgba(28, 28, 30, 0.95)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
   icon: {
     marginBottom: 16,
   },

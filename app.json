@@ -44,7 +44,8 @@
       "expo-font",
       "expo-router",
       "expo-web-browser",
-      "expo-av"
+      "expo-av",
+      "react-native-reanimated/plugin"
     ],
     "scheme": "flowfocus",
     "experiments": {

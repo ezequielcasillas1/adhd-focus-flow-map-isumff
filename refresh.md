@@ -1,8 +1,8 @@
 {
-  ### 2025-11-15 - TestFlight TurboModule Crash + Babel Plugin Conflicts  
+  ### 2025-11-15 - TestFlight TurboModule Crash + Reanimated v4 Worklet Errors
   **Status:** PARTIAL ⚠️ → TESTING 🧪
   **Files:** components/IconSymbol.ios.tsx (deleted), components/IconSymbol.tsx, app.json, babel.config.js, package.json
-  **Result:** App crashed on launch in TestFlight builds #11-15 with SIGABRT on TurboModule queue. Initial hypothesis (expo-blur, expo-haptics, expo-linear-gradient) was incorrect. TRUE ROOT CAUSE #1: react-native-reanimated used in FloatingTabBar.tsx and ListItem.tsx but NOT in app.json plugins. Fixed by adding "react-native-reanimated/plugin" to app.json (commit 49d24f9). ROOT CAUSE #2: Build #16 failed with Babel error "Cannot set properties of undefined (setting 'workletNumber')". react-native-worklets Babel plugin in babel.config.js was broken. However, worklets package is REQUIRED as peer dependency of reanimated. Solution: Keep worklets in package.json but remove Babel plugin from babel.config.js (commits 1bbc8d3, 18f2e4c). Awaiting Build #16 retry.
+  **Result:** App crashed on launch in TestFlight builds #11-15 with SIGABRT on TurboModule queue. Root cause chain: (1) react-native-reanimated v4.1.0 requires react-native-worklets as peer dependency, (2) worklets Babel plugin has broken workletNumber setter causing "Cannot set properties of undefined" error, (3) Even reanimated's own Babel plugin in v4 triggers same worklet error. FINAL SOLUTION: Downgraded react-native-reanimated from 4.1.0 to 3.15.4 (no worklets dependency), removed react-native-worklets from package.json, removed reanimated Babel plugin from app.json (commit 8602959). Reanimated v3 is stable with Expo SDK 54 and doesn't use worklets architecture. Awaiting Build #16.
 
   ### 2025-11-15 - AuthSessionMissingError on Multi-Device Sign Out (FINAL FIX)
   **Status:** SUCCESS ✅

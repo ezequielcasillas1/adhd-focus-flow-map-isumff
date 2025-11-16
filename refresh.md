@@ -1,8 +1,8 @@
 {
-  ### 2025-11-15 - TestFlight TurboModule Crash + Reanimated Compatibility
+  ### 2025-11-15 - TestFlight TurboModule Crash + New Architecture Incompatibility
   **Status:** PARTIAL ⚠️ → TESTING 🧪
   **Files:** components/IconSymbol.ios.tsx (deleted), components/IconSymbol.tsx, app.json, babel.config.js, package.json
-  **Result:** App crashed on launch in TestFlight builds #11-15 with SIGABRT on TurboModule queue. Root cause: react-native-reanimated v4.1.0 requires react-native-worklets with broken Babel plugin causing workletNumber errors. Attempted fix with v3.15.4 failed with "folly/coro/Coroutine.h file not found" during Xcode build (missing Folly C++ library). Downgraded to v2.17.0 but Build #16 failed with peer dependency conflict: react-native-css-interop@0.1.22 requires reanimated>=3.6.2. FINAL SOLUTION: Removed unused react-native-css-interop package (commit 2e39788), kept reanimated v2.17.0. Awaiting Build #17.
+  **Result:** App crashed on launch in TestFlight builds #11-15 with SIGABRT on TurboModule queue. Root cause chain: (1) react-native-reanimated v4 requires worklets with broken Babel plugin, (2) v3.15.4 failed with missing Folly C++ dependency, (3) v2.17.0 failed with css-interop peer dependency conflict, (4) Build #17 failed: "Reanimated 2.x does not support Fabric (New Architecture)". TRUE ROOT CAUSE: app.json had "newArchEnabled": true but Reanimated v2 doesn't support New Architecture. FINAL SOLUTION: Disabled New Architecture (commit c13a532), removed react-native-css-interop, kept reanimated v2.17.0. New Architecture is experimental and unstable. Awaiting Build #18.
 
   ### 2025-11-15 - AuthSessionMissingError on Multi-Device Sign Out (FINAL FIX)
   **Status:** SUCCESS ✅

@@ -1,8 +1,8 @@
 {
-  ### 2025-11-15 - TestFlight TurboModule Crash (Missing Native Plugins)
-  **Status:** PARTIAL ⚠️ → SUCCESS ✅
+  ### 2025-11-15 - TestFlight TurboModule Crash (react-native-reanimated)
+  **Status:** PARTIAL ⚠️ → TESTING 🧪
   **Files:** components/IconSymbol.ios.tsx (deleted), components/IconSymbol.tsx, app.json
-  **Result:** App crashed on launch in TestFlight builds #11-14 with SIGABRT on TurboModule queue. Build #14 still crashed after expo-symbols fix. Root cause: THREE native modules used throughout app but missing from app.json plugins: expo-blur (15+ files), expo-haptics (3 files), expo-linear-gradient (2 files). React Native attempted to invoke these missing native modules at initialization. Fixed by adding all three to app.json plugins array. Any import from a native module package requires the plugin to be declared.
+  **Result:** App crashed on launch in TestFlight builds #11-15 with SIGABRT on TurboModule queue. Initial hypothesis (expo-blur, expo-haptics, expo-linear-gradient) was incorrect - removing them from plugins didn't fix Build #15. TRUE ROOT CAUSE: react-native-reanimated used in FloatingTabBar.tsx and ListItem.tsx but NOT in app.json plugins array. React Native Reanimated REQUIRES explicit plugin configuration as "react-native-reanimated/plugin". Added to plugins array in commit 49d24f9. Awaiting Build #16 verification.
 
   ### 2025-11-15 - AuthSessionMissingError on Multi-Device Sign Out (FINAL FIX)
   **Status:** SUCCESS ✅

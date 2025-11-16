@@ -1,4 +1,9 @@
-{ 
+{
+  ### 2025-11-15 - TestFlight TurboModule Crash (expo-symbols Native Module)
+  **Status:** SUCCESS ✅
+  **Files:** components/IconSymbol.ios.tsx (deleted), components/IconSymbol.tsx, app.json
+  **Result:** App crashed immediately on launch in TestFlight builds #11-13 with SIGABRT on TurboModule queue. Root cause: Even after removing IconSymbol.ios.tsx and expo-symbols plugin, the fallback IconSymbol.tsx still imported types from expo-symbols (line 4: `import { SymbolWeight } from "expo-symbols"`). This caused React Native to attempt loading the missing native module at initialization. Fixed by: (1) Deleting IconSymbol.ios.tsx, (2) Removing expo-symbols from app.json plugins, (3) Removing ALL expo-symbols imports from IconSymbol.tsx and replacing with local type definitions. The import statement executes even if not used, triggering native module linkage.
+
   ### 2025-11-15 - AuthSessionMissingError on Multi-Device Sign Out (FINAL FIX)
   **Status:** SUCCESS ✅
   **Files:** src/context/AuthContext.tsx, app/(tabs)/profile.tsx

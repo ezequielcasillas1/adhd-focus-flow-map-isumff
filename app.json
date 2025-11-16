@@ -44,7 +44,10 @@
       "expo-font",
       "expo-router",
       "expo-web-browser",
-      "expo-av"
+      "expo-av",
+      "expo-blur",
+      "expo-haptics",
+      "expo-linear-gradient"
     ],
     "scheme": "flowfocus",
     "experiments": {

@@ -1,8 +1,8 @@
 {
-  ### 2025-11-15 - TestFlight TurboModule Crash (react-native-reanimated)
+  ### 2025-11-15 - TestFlight TurboModule Crash + Babel Plugin Conflicts
   **Status:** PARTIAL ⚠️ → TESTING 🧪
-  **Files:** components/IconSymbol.ios.tsx (deleted), components/IconSymbol.tsx, app.json
-  **Result:** App crashed on launch in TestFlight builds #11-15 with SIGABRT on TurboModule queue. Initial hypothesis (expo-blur, expo-haptics, expo-linear-gradient) was incorrect - removing them from plugins didn't fix Build #15. TRUE ROOT CAUSE: react-native-reanimated used in FloatingTabBar.tsx and ListItem.tsx but NOT in app.json plugins array. React Native Reanimated REQUIRES explicit plugin configuration as "react-native-reanimated/plugin". Added to plugins array in commit 49d24f9. Awaiting Build #16 verification.
+  **Files:** components/IconSymbol.ios.tsx (deleted), components/IconSymbol.tsx, app.json, babel.config.js, package.json
+  **Result:** App crashed on launch in TestFlight builds #11-15 with SIGABRT on TurboModule queue. Initial hypothesis (expo-blur, expo-haptics, expo-linear-gradient) was incorrect. TRUE ROOT CAUSE #1: react-native-reanimated used in FloatingTabBar.tsx and ListItem.tsx but NOT in app.json plugins. Fixed by adding "react-native-reanimated/plugin" to app.json (commit 49d24f9). ROOT CAUSE #2: Build #16 failed with Babel error "Cannot set properties of undefined (setting 'workletNumber')". Unused react-native-worklets plugin in babel.config.js caused conflicts. Fixed by removing from babel.config.js and package.json (commit 1bbc8d3). Awaiting Build #16 retry.
 
   ### 2025-11-15 - AuthSessionMissingError on Multi-Device Sign Out (FINAL FIX)
   **Status:** SUCCESS ✅

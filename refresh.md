@@ -1,8 +1,8 @@
 {
-  ### 2025-11-15 - TestFlight TurboModule Crash (expo-symbols Native Module)
-  **Status:** SUCCESS ✅
+  ### 2025-11-15 - TestFlight TurboModule Crash (Missing Native Plugins)
+  **Status:** PARTIAL ⚠️ → SUCCESS ✅
   **Files:** components/IconSymbol.ios.tsx (deleted), components/IconSymbol.tsx, app.json
-  **Result:** App crashed immediately on launch in TestFlight builds #11-13 with SIGABRT on TurboModule queue. Root cause: Even after removing IconSymbol.ios.tsx and expo-symbols plugin, the fallback IconSymbol.tsx still imported types from expo-symbols (line 4: `import { SymbolWeight } from "expo-symbols"`). This caused React Native to attempt loading the missing native module at initialization. Fixed by: (1) Deleting IconSymbol.ios.tsx, (2) Removing expo-symbols from app.json plugins, (3) Removing ALL expo-symbols imports from IconSymbol.tsx and replacing with local type definitions. The import statement executes even if not used, triggering native module linkage.
+  **Result:** App crashed on launch in TestFlight builds #11-14 with SIGABRT on TurboModule queue. Build #14 still crashed after expo-symbols fix. Root cause: THREE native modules used throughout app but missing from app.json plugins: expo-blur (15+ files), expo-haptics (3 files), expo-linear-gradient (2 files). React Native attempted to invoke these missing native modules at initialization. Fixed by adding all three to app.json plugins array. Any import from a native module package requires the plugin to be declared.
 
   ### 2025-11-15 - AuthSessionMissingError on Multi-Device Sign Out (FINAL FIX)
   **Status:** SUCCESS ✅

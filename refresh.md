@@ -1,8 +1,13 @@
 {
+  ### 2025-11-16 - FBReactNativeSpec Missing + Reanimated Fully Removed
+  **Status:** SUCCESS ✅
+  **Files:** components/FloatingTabBar.tsx, package.json
+  **Result:** Build #18 failed: "Unable to find specification for FBReactNativeSpec depended upon by RNReanimated". Even v2.14.4 of reanimated couldn't resolve FBReactNativeSpec dependency in RN 0.81.4 legacy architecture. TRUE ROOT CAUSE: react-native-reanimated was only used in ONE file (FloatingTabBar.tsx). FINAL SOLUTION: Completely removed reanimated dependency, rewrote FloatingTabBar to use React Native's built-in Animated API (replaced useSharedValue with useRef(new Animated.Value()), useAnimatedStyle with interpolate, withSpring with Animated.spring). Native Animated API is fully capable of handling this simple slide animation. No native module dependencies, no pod install conflicts.
+
   ### 2025-11-15 - TestFlight TurboModule Crash + New Architecture Incompatibility
-  **Status:** PARTIAL ⚠️ → TESTING 🧪
+  **Status:** SUCCESS ✅ (superseded by FBReactNativeSpec fix above)
   **Files:** components/IconSymbol.ios.tsx (deleted), components/IconSymbol.tsx, app.json, babel.config.js, package.json
-  **Result:** App crashed on launch in TestFlight builds #11-15 with SIGABRT on TurboModule queue. Root cause chain: (1) react-native-reanimated v4 requires worklets with broken Babel plugin, (2) v3.15.4 failed with missing Folly C++ dependency, (3) v2.17.0 failed with css-interop peer dependency conflict, (4) Build #17 failed: "Reanimated 2.x does not support Fabric (New Architecture)". TRUE ROOT CAUSE: app.json had "newArchEnabled": true but Reanimated v2 doesn't support New Architecture. FINAL SOLUTION: Disabled New Architecture (commit c13a532), removed react-native-css-interop, kept reanimated v2.17.0. New Architecture is experimental and unstable. Awaiting Build #18.
+  **Result:** App crashed on launch in TestFlight builds #11-15 with SIGABRT on TurboModule queue. Root cause chain: (1) react-native-reanimated v4 requires worklets with broken Babel plugin, (2) v3.15.4 failed with missing Folly C++ dependency, (3) v2.17.0 failed with css-interop peer dependency conflict, (4) Build #17 failed: "Reanimated 2.x does not support Fabric (New Architecture)". TRUE ROOT CAUSE: app.json had "newArchEnabled": true but Reanimated v2 doesn't support New Architecture. INTERIM SOLUTION: Disabled New Architecture (commit c13a532), removed react-native-css-interop. Build #18 still failed.
 
   ### 2025-11-15 - AuthSessionMissingError on Multi-Device Sign Out (FINAL FIX)
   **Status:** SUCCESS ✅

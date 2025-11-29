@@ -60,20 +60,64 @@ Completed features and implementations from request.md.
 
 ## Bug Fixes & Improvements
 
+### 2025-11-28 - Sound System Fixes
+**Status:** ✅ Completed
+**Files:** src/services/SoundService.ts, app/(tabs)/session.tsx, app/(tabs)/sounds.tsx
+**Details:** Multiple critical sound system fixes:
+- Scheduled timer cleanup preventing sounds from stopping
+- Crossfade duration error with retry logic for metadata loading
+- Removed expo-updates hack, proper async/await sound stopping
+- Nature sounds overlap optimization (3s no-fade vs 2s crossfade)
+- Fixed nature sounds fade-in bug on first instance
+- Proper crossfade timing (old fades out while new fades in)
+- Preview sound fade-out with proper cleanup
+
+### 2025-11-27 - Core Fixes
+**Status:** ✅ Completed
+**Files:** src/context/AppContext.tsx, src/services/DataService.ts
+**Details:**
+- Master Sound toggle crash fix (exposed updateSounds action)
+- Weekly progress bar counting multiple sessions per day
+- Comprehensive async/await on forceStopAll() across all callers
+
+### 2025-11-21 - Development Tools
+**Status:** ✅ Completed
+**Files:** package.json
+**Details:** Fixed ngrok tunnel timeout, added dev:tunnel script, LAN mode for faster local development
+
+### 2025-11-16 - Build Fixes
+**Status:** ✅ Completed
+**Files:** components/FloatingTabBar.tsx, package.json, babel.config.js, app.json
+**Details:**
+- Removed react-native-reanimated dependency (FBReactNativeSpec conflicts)
+- Rewrote FloatingTabBar using React Native's built-in Animated API
+- Fixed TestFlight TurboModule crashes, New Architecture incompatibility
+- Disabled New Architecture for RN 0.81.4 compatibility
+
 ### Auth & Session Management
+**Status:** ✅ Completed
+**Files:** src/context/AuthContext.tsx, app/(tabs)/profile.tsx, app/(auth)/reset-password.tsx
+**Details:**
 - Fixed AuthSessionMissingError on multi-device sign out
 - Implemented complete password reset flow with email
 - Platform-specific confirmation dialogs (web vs native)
 
 ### UI/UX Improvements
+**Status:** ✅ Completed
+**Files:** components/clock-styles/DigitalClockView.tsx, app/(tabs)/stats.tsx, app/(tabs)/profile.tsx
+**Details:**
 - Fixed clock display glitches and digit jumping
 - Fixed total time decimals display
 - Improved mobile layout and font sizing
 
 ### Data Sync & Analytics
+**Status:** ✅ Completed
+**Files:** src/context/AppContext.tsx, app/(tabs)/stats.tsx
+**Details:**
 - Fixed hook initialization order (refreshAnalytics)
 - Added AppState listener for foreground refresh
 - Implemented useFocusEffect for stats page
+- Cross-device stats syncing (partial - needs verification)
 
 ---
 

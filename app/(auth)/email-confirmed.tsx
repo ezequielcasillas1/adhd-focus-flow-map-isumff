@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { GlassView } from 'expo-glass-effect';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const styles = StyleSheet.create({
@@ -88,7 +88,7 @@ export default function EmailConfirmedScreen() {
         colors={[colors.background, colors.cardBackground]}
         style={styles.gradient}
       >
-        <GlassView style={styles.glassCard}>
+        <BlurView intensity={80} style={styles.glassCard}>
           <View style={styles.iconContainer}>
             <IconSymbol
               name="checkmark.circle.fill"
@@ -108,7 +108,7 @@ export default function EmailConfirmedScreen() {
           >
             <Text style={styles.continueButtonText}>Continue to App</Text>
           </TouchableOpacity>
-        </GlassView>
+        </BlurView>
       </LinearGradient>
     </View>
   );

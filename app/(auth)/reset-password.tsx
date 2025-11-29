@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { GlassView } from 'expo-glass-effect';
+import { BlurView } from 'expo-blur';
 import { supabase } from '@/app/integrations/supabase/client';
 
 const styles = StyleSheet.create({
@@ -277,7 +277,7 @@ export default function ResetPasswordScreen() {
 
   // Render email request form
   const renderRequestForm = () => (
-    <GlassView style={styles.glassCard}>
+    <BlurView intensity={80} style={styles.glassCard}>
       <Text style={styles.title}>Forgot Password?</Text>
       <Text style={styles.subtitle}>
         Enter your email address and we'll send you a link to reset your password
@@ -330,12 +330,12 @@ export default function ResetPasswordScreen() {
           <Text style={styles.signInLink}>Sign In</Text>
         </TouchableOpacity>
       </View>
-    </GlassView>
+          </BlurView>
   );
 
   // Render confirmation that email was sent
   const renderSentConfirmation = () => (
-    <GlassView style={styles.glassCard}>
+    <BlurView intensity={80} style={styles.glassCard}>
       <Text style={styles.title}>Check Your Email</Text>
       <Text style={styles.subtitle}>
         We've sent a password reset link to {email}. Please check your inbox and click the link to reset your password.
@@ -356,12 +356,12 @@ export default function ResetPasswordScreen() {
           <Text style={styles.signInLink}>Try Again</Text>
         </TouchableOpacity>
       </View>
-    </GlassView>
+          </BlurView>
   );
 
   // Render password reset form (after clicking email link)
   const renderResetForm = () => (
-    <GlassView style={styles.glassCard}>
+    <BlurView intensity={80} style={styles.glassCard}>
       <Text style={styles.title}>Reset Password</Text>
       <Text style={styles.subtitle}>
         Enter your new password below
@@ -441,7 +441,7 @@ export default function ResetPasswordScreen() {
           <Text style={styles.signInLink}>Sign In</Text>
         </TouchableOpacity>
       </View>
-    </GlassView>
+          </BlurView>
   );
 
   return (

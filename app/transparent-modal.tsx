@@ -1,6 +1,6 @@
 import { StyleSheet, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { GlassView } from 'expo-glass-effect';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '@react-navigation/native';
 
 export default function TransparentModal() {

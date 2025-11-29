@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { GlassView } from 'expo-glass-effect';
 import { IconSymbol } from './IconSymbol';
 import { 
   logError, 
@@ -135,7 +134,7 @@ export const ErrorTestComponent: React.FC<ErrorTestComponentProps> = ({ onClose 
 
   return (
     <View style={styles.container}>
-      <GlassView style={styles.card}>
+      <View style={[styles.card, styles.glassEffect]}>
         <View style={styles.header}>
           <IconSymbol name="hammer.fill" size={24} color={colors.primary} />
           <Text style={styles.title}>Error Testing Tools</Text>
@@ -189,7 +188,7 @@ export const ErrorTestComponent: React.FC<ErrorTestComponentProps> = ({ onClose 
         <Text style={styles.note}>
           💡 Check console logs and monitoring dashboard to see the results
         </Text>
-      </GlassView>
+      </View>
     </View>
   );
 };
@@ -201,6 +200,11 @@ const styles = StyleSheet.create({
   card: {
     padding: 20,
     borderRadius: 16,
+  },
+  glassEffect: {
+    backgroundColor: 'rgba(28, 28, 30, 0.95)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   header: {
     flexDirection: 'row',

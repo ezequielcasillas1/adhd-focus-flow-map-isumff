@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { colors, commonStyles } from "@/styles/commonStyles";
 import { useTheme } from "@react-navigation/native";
-import { GlassView } from "expo-glass-effect";
+import { BlurView } from "expo-blur";
 
 const styles = StyleSheet.create({
   container: {

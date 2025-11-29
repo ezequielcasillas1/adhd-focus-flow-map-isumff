@@ -2,7 +2,6 @@
 import React, { Component, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { GlassView } from 'expo-glass-effect';
 import { IconSymbol } from './IconSymbol';
 
 interface Props {
@@ -41,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <View style={styles.container}>
-          <GlassView style={styles.errorCard}>
+          <View style={[styles.errorCard, styles.glassEffect]}>
             <IconSymbol 
               name="exclamationmark.triangle" 
               size={48} 
@@ -60,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <TouchableOpacity style={styles.button} onPress={this.handleRestart}>
               <Text style={styles.buttonText}>Try Again</Text>
             </TouchableOpacity>
-          </GlassView>
+          </View>
         </View>
       );
     }
@@ -82,6 +81,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     maxWidth: 320,
+  },
+  glassEffect: {
+    backgroundColor: 'rgba(28, 28, 30, 0.95)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  glassEffect: {
+    backgroundColor: 'rgba(28, 28, 30, 0.95)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   icon: {
     marginBottom: 16,

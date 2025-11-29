@@ -53,7 +53,9 @@
       "router": {},
       "eas": {
         "projectId": "aad92bd6-dd5a-4e7d-9ba8-ae43ab834b0b"
-      }
+      },
+      "supabaseUrl": "https://brwhhkmjyadcaasqggtd.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyd2hoa21qeWFkY2Fhc3FnZ3RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc3MTksImV4cCI6MjA3NTQ4MzcxOX0.lxygT-dYwguqyuHmSW2S2wUcAJf-uY25opKRs9yNXWY"
     },
     "owner": "casiezeq"
   }

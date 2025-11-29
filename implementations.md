@@ -4,6 +4,27 @@ Completed features and implementations from request.md.
 
 ---
 
+## 2025-11-28 - Sound System Critical Fix
+
+### 🔊 Scheduled Timer Cleanup (Sounds Not Stopping)
+**Status:** ✅ Completed  
+**Files:** src/services/SoundService.ts
+**Details:** Fixed critical bug where sounds wouldn't stop when session ended. Crossfade system used setTimeout timers that kept firing after stop command, creating new instances indefinitely. Added scheduledTimers[] array to track all timers. stopSound and forceStopAll now clear ALL timers before stopping sounds. 100% reliable stop behavior achieved.
+
+## 2025-11-27 - Sound Enhancement
+
+### 🔊 Crossfade Loop System (Seamless Looping)
+**Status:** ✅ Completed
+**Files:** src/services/SoundService.ts
+**Details:** Implemented crossfade loop system to eliminate harsh cutoff at end of each loop cycle. When sounds loop during sessions, system now plays overlapping instances with 2-second crossfade between them. Creates seamless continuous audio without "pop" or harsh transitions. Manages multiple instances, automatic cleanup, and proper stop handling.
+
+### 🔊 Sound Fade-Out Enhancement (Preview Sounds)
+**Status:** ✅ Completed
+**Files:** src/services/SoundService.ts, app/(tabs)/sounds.tsx
+**Details:** Implemented 2-second fade-out before sound clips end for preview/non-looping sounds. Tracks sound duration and schedules fade automatically. Properly stops and unloads after fade completes.
+
+---
+
 ## 2025-11-15 - Feature Implementations
 
 ### 🖼️ Fullscreen Clock Mode
@@ -25,6 +46,15 @@ Completed features and implementations from request.md.
 **Status:** ✅ Completed
 **Files:** src/services/FreesoundAPI.ts, src/services/SupabaseFreesoundService.ts, app/config/freesound.config.ts, supabase/functions/freesound-download/
 **Details:** Complete Freesound API integration with secure Supabase edge functions for audio downloads. API key managed securely. Sound library access implemented.
+
+---
+
+## 2025-11-27 - Toggle Feature Controls
+
+### 🔀 Time Manipulation Toggle Controls
+**Status:** ✅ Completed
+**Files:** src/context/AppContext.tsx, app/(tabs)/session.tsx, src/services/ClockService.ts
+**Details:** Added toggle controls for Time Slot Duration and Time Speed Multiplier features. Users can enable both simultaneously OR use one at a time. Minimum requirement: at least one feature must always be enabled. Auto-enables other feature with alert if user tries to disable both. Features combine when both enabled (time slots + speed multiplier).
 
 ---
 

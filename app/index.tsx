@@ -22,7 +22,7 @@ export default function Index() {
   }
 
   if (session || isGuestMode) {
-    return <Redirect href="/(tabs)/(home)/" />;
+    return <Redirect href="/(tabs)/(home)" />;
   }
 
   return <Redirect href="/(auth)/welcome" />;

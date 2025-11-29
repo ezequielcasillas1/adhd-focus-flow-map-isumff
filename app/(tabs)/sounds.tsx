@@ -25,7 +25,7 @@ export default function SoundsScreen() {
     nature: number;
   }>({ ticking: 1, breathing: 1, nature: 1 });
 
-  const handleMasterSoundToggle = () => {
+  const handleMasterSoundToggle = async () => {
     const newMasterState = !state.sounds.master;
     console.log('Sounds: Toggling master sound to:', newMasterState);
     
@@ -34,7 +34,7 @@ export default function SoundsScreen() {
       payload: { master: newMasterState }
     });
     
-    soundService.setMasterEnabled(newMasterState);
+    await soundService.setMasterEnabled(newMasterState);
     soundService.playHaptic('medium');
   };
 
@@ -97,13 +97,20 @@ export default function SoundsScreen() {
     // Stop any currently playing preview
     await soundService.forceStopAll();
     
-    // Play the selected sound for preview (short duration)
+    // Play the selected sound for preview (non-looping with automatic fade-out)
+    // The sound will play with a 2-second fade-out before its natural end
     await soundService.playSound(soundId, false);
     
-    // Stop after 8 seconds
+    // For very long sounds (>10s), limit preview to 10 seconds
+    // The automatic fade will handle sounds <10s perfectly
+    // For longer sounds, this ensures preview doesn't run too long
     setTimeout(async () => {
-      await soundService.stopSound(soundId);
-    }, 8000);
+      // Only stop if still playing (might have already finished with auto-fade)
+      if (soundService.isPlaying(soundId)) {
+        console.log('Sounds: Preview timeout reached, stopping long sound');
+        await soundService.stopSound(soundId);
+      }
+    }, 10000);
   };
 
   const handleTestHaptics = async () => {

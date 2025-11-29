@@ -30,6 +30,8 @@ export interface Session {
     suggestions: string[];
   };
   supabaseSessionId?: string; // Track Supabase session ID
+  timeSlotEnabled: boolean; // Toggle for Time Slot Duration feature
+  speedMultiplierEnabled: boolean; // Toggle for Time Speed Multiplier feature
 }
 
 export interface Clock {
@@ -131,6 +133,8 @@ const initialState: AppState = {
       notes: '',
       suggestions: [],
     },
+    timeSlotEnabled: true, // Time Slot Duration enabled by default
+    speedMultiplierEnabled: false, // Speed Multiplier disabled by default
   },
   clock: {
     manipulatedTime: new Date(),
@@ -371,6 +375,7 @@ interface AppContextValue {
     refreshAnalytics: () => Promise<void>;
     syncSoundsToSupabase: () => Promise<void>;
     updateClockStyle: (style: ClockStyle) => Promise<void>;
+    updateSounds: (soundUpdates: Partial<Sounds>) => void;
   };
 }
 
@@ -669,13 +674,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [authUser, isGuestMode]);
 
+  const updateSounds = useCallback((soundUpdates: Partial<Sounds>) => {
+    dispatch({ type: 'UPDATE_SOUNDS', payload: soundUpdates });
+  }, []);
+
   const actions = useMemo(() => ({
     startSession,
     endSession,
     refreshAnalytics,
     syncSoundsToSupabase,
     updateClockStyle,
-  }), [startSession, endSession, refreshAnalytics, syncSoundsToSupabase, updateClockStyle]);
+    updateSounds,
+  }), [startSession, endSession, refreshAnalytics, syncSoundsToSupabase, updateClockStyle, updateSounds]);
 
   return (
     <AppContext.Provider value={{ state, dispatch, actions }}>

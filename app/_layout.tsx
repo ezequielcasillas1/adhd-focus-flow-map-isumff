@@ -1,7 +1,6 @@
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
 import { AppProvider } from '@/src/context/AppContext';
 import { AuthProvider } from '@/src/context/AuthContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -10,8 +9,6 @@ import React, { useEffect } from 'react';
 import { soundService } from '@/src/services/SoundService';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   useEffect(() => {
     // Initialize sound service on app start
     const initializeSounds = async () => {
@@ -35,7 +32,7 @@ export default function RootLayout() {
               contentStyle: { backgroundColor: colors.background },
             }}
           />
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <StatusBar style="auto" />
         </AppProvider>
       </AuthProvider>
     </ErrorBoundary>

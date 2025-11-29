@@ -40,15 +40,6 @@ module.exports = function (api) {
       ],
       ...EDITABLE_COMPONENTS,
       "@babel/plugin-proposal-export-namespace-from",
-      [
-        "module:react-native-dotenv",
-        {
-          moduleName: "@env",
-          path: ".env",
-          safe: false,
-          allowUndefined: true,
-        },
-      ],
       "react-native-worklets/plugin", // react-native-worklets/plugin must be listed last!
     ],
   };

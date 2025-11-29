@@ -474,25 +474,14 @@ class DataService {
       session.completed_at && new Date(session.completed_at) >= oneWeekAgo
     );
 
-    // Track unique days with sessions (using Set to avoid double-counting same day)
-    const sessionsPerDay: { [key: number]: Set<string> } = {
-      0: new Set(), 1: new Set(), 2: new Set(), 3: new Set(), 
-      4: new Set(), 5: new Set(), 6: new Set()
-    };
-
+    // Count actual sessions per day (not binary)
     recentSessions.forEach(session => {
       if (session.completed_at && session.actual_duration) {
         const sessionDate = new Date(session.completed_at);
         const dayOfWeek = sessionDate.getDay(); // 0 = Sunday, 6 = Saturday
-        const dateKey = sessionDate.toISOString().split('T')[0]; // YYYY-MM-DD
-        sessionsPerDay[dayOfWeek].add(dateKey);
+        weeklyProgress[dayOfWeek]++; // Increment session count for that day
       }
     });
-
-    // Convert sets to counts (1 if any sessions that day, 0 otherwise)
-    for (let day = 0; day < 7; day++) {
-      weeklyProgress[day] = sessionsPerDay[day].size > 0 ? 1 : 0;
-    }
 
     return weeklyProgress;
   }

@@ -1,5 +1,16 @@
 
 
+## 🔊 Sound Fade-Out Enhancement
+
+**Status**: ✅ Completed
+
+- Eliminate harsh cutoff noise when sound clips end
+- Implement 2-second fade-out that overlaps with end of sound
+- Apply to preview sounds and non-looping playback
+- Smooth transition prevents jarring audio experience
+- Track sound duration and start fade before natural end
+
+---
 
 ## 🖼️ Fullscreen Clock Mode (Solo View)
 
@@ -98,6 +109,19 @@
 - Replaced `AppProvider` with `AppProviderEnhanced` in `app/_layout.tsx`
 - Uses existing `DataService.ts` for all Supabase operations
 - Backwards compatible with guest mode (local storage only)
+
+---
+
+## 🔀 Toggle Feature Controls (Time Slot Duration & Speed Multiplier)
+
+**Status**: ✅ Completed
+
+- Add toggle/button to enable/disable "Time Slot Duration" feature
+- Add toggle/button to enable/disable "Time Speed Multiplier" feature
+- **Flexible Usage**: User can enable both features simultaneously OR use one at a time
+- **Minimum Requirement**: At least one feature must always be enabled
+- If user tries to disable both, the other feature auto-enables with alert notification
+- Features work independently when both enabled (time slots + speed multiplier combine)
 
 ---
 

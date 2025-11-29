@@ -77,14 +77,74 @@ export default function SessionScreen() {
     soundService.playHaptic('light');
   };
 
-  const handleStartSession = () => {
+  const handleToggleTimeSlot = () => {
+    const newEnabled = !state.session.timeSlotEnabled;
+    console.log('Toggling Time Slot:', newEnabled);
+    
+    // Prevent both from being disabled - if turning this off, ensure speed multiplier is on
+    if (!newEnabled && !state.session.speedMultiplierEnabled) {
+      dispatch({
+        type: 'UPDATE_SESSION',
+        payload: { 
+          timeSlotEnabled: false,
+          speedMultiplierEnabled: true // Auto-enable speed multiplier
+        }
+      });
+      Alert.alert(
+        "Feature Required",
+        "At least one time manipulation feature must be enabled. Speed Multiplier has been automatically enabled.",
+        [{ text: "OK" }]
+      );
+    } else {
+      dispatch({
+        type: 'UPDATE_SESSION',
+        payload: { 
+          timeSlotEnabled: newEnabled
+        }
+      });
+    }
+    
+    soundService.playHaptic('medium');
+  };
+
+  const handleToggleSpeedMultiplier = () => {
+    const newEnabled = !state.session.speedMultiplierEnabled;
+    console.log('Toggling Speed Multiplier:', newEnabled);
+    
+    // Prevent both from being disabled - if turning this off, ensure time slot is on
+    if (!newEnabled && !state.session.timeSlotEnabled) {
+      dispatch({
+        type: 'UPDATE_SESSION',
+        payload: { 
+          speedMultiplierEnabled: false,
+          timeSlotEnabled: true // Auto-enable time slot
+        }
+      });
+      Alert.alert(
+        "Feature Required",
+        "At least one time manipulation feature must be enabled. Time Slot Duration has been automatically enabled.",
+        [{ text: "OK" }]
+      );
+    } else {
+      dispatch({
+        type: 'UPDATE_SESSION',
+        payload: { 
+          speedMultiplierEnabled: newEnabled
+        }
+      });
+    }
+    
+    soundService.playHaptic('medium');
+  };
+
+  const handleStartSession = async () => {
     console.log('Starting session');
     
     if (isRunning) {
       // Stop session
       setIsRunning(false);
       clockService.stop();
-      soundService.forceStopAll();
+      await soundService.forceStopAll();
       
       const clockData = clockService.getCurrentData();
       
@@ -124,10 +184,23 @@ export default function SessionScreen() {
       
       // Set mode to speed first
       clockService.setMode('speed');
-      // Then set the multiplier and configurations
-      clockService.setSpeedMultiplier(state.session.speedSetting);
-      clockService.setTimeSlotDuration(state.session.timeSlotDuration || 15);
-      clockService.setSlotEveryMinutes(state.session.slotEveryMinutes || 30);
+      
+      // Apply settings based on which features are enabled
+      // Both can be enabled simultaneously
+      if (state.session.timeSlotEnabled) {
+        clockService.setTimeSlotDuration(state.session.timeSlotDuration || 15);
+        clockService.setSlotEveryMinutes(state.session.slotEveryMinutes || 30);
+      } else {
+        clockService.setTimeSlotDuration(0); // Disable time slot (0 means no advancement)
+        clockService.setSlotEveryMinutes(0); // Disable slot every
+      }
+      
+      if (state.session.speedMultiplierEnabled) {
+        clockService.setSpeedMultiplier(state.session.speedSetting);
+      } else {
+        clockService.setSpeedMultiplier(1); // Use real-time speed when disabled
+      }
+      
       clockService.start();
       
       // Start sound layers if enabled
@@ -255,8 +328,23 @@ export default function SessionScreen() {
               </View>
               
               {/* Time Slot Duration */}
-              <View style={[commonStyles.goldCard]}>
-                <Text style={commonStyles.subtitle}>Time Slot Duration</Text>
+              <View style={[commonStyles.goldCard, !state.session.timeSlotEnabled && styles.disabledCard]}>
+                <View style={styles.featureHeader}>
+                  <Text style={commonStyles.subtitle}>Time Slot Duration</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.toggleButton,
+                      state.session.timeSlotEnabled && styles.toggleButtonActive
+                    ]}
+                    onPress={handleToggleTimeSlot}
+                  >
+                    <IconSymbol 
+                      name={state.session.timeSlotEnabled ? "checkmark.circle.fill" : "circle"} 
+                      color={state.session.timeSlotEnabled ? colors.primary : colors.textSecondary} 
+                      size={24} 
+                    />
+                  </TouchableOpacity>
+                </View>
                 <Text style={styles.description}>
                   How many minutes to advance time with each slot
                 </Text>
@@ -264,9 +352,11 @@ export default function SessionScreen() {
                   {[15, 30, 50].map((duration) => (
                     <TouchableOpacity
                       key={duration}
+                      disabled={!state.session.timeSlotEnabled}
                       style={[
                         styles.timeSlotButton,
-                        (state.session.timeSlotDuration || 15) === duration && styles.selectedTimeSlotButton
+                        (state.session.timeSlotDuration || 15) === duration && styles.selectedTimeSlotButton,
+                        !state.session.timeSlotEnabled && styles.disabledButton
                       ]}
                       onPress={() => handleTimeSlotChange(duration as 15 | 30 | 50)}
                     >
@@ -277,7 +367,7 @@ export default function SessionScreen() {
               </View>
 
               {/* Slot Every Configuration */}
-              <View style={[commonStyles.platinumCard]}>
+              <View style={[commonStyles.platinumCard, !state.session.timeSlotEnabled && styles.disabledCard]}>
                 <Text style={commonStyles.subtitle}>Apply Slot Every</Text>
                 <Text style={styles.description}>
                   How often to apply the time slot advancement
@@ -286,9 +376,11 @@ export default function SessionScreen() {
                   {[15, 30, 45, 60].map((minutes) => (
                     <TouchableOpacity
                       key={minutes}
+                      disabled={!state.session.timeSlotEnabled}
                       style={[
                         styles.slotEveryButton,
-                        (state.session.slotEveryMinutes || 30) === minutes && styles.selectedSlotEveryButton
+                        (state.session.slotEveryMinutes || 30) === minutes && styles.selectedSlotEveryButton,
+                        !state.session.timeSlotEnabled && styles.disabledButton
                       ]}
                       onPress={() => handleSlotEveryChange(minutes)}
                     >
@@ -299,8 +391,23 @@ export default function SessionScreen() {
               </View>
               
               {/* Time Speed Multiplier */}
-              <View style={[commonStyles.silverCard]}>
-                <Text style={commonStyles.subtitle}>Time Speed Multiplier</Text>
+              <View style={[commonStyles.silverCard, !state.session.speedMultiplierEnabled && styles.disabledCard]}>
+                <View style={styles.featureHeader}>
+                  <Text style={commonStyles.subtitle}>Time Speed Multiplier</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.toggleButton,
+                      state.session.speedMultiplierEnabled && styles.toggleButtonActive
+                    ]}
+                    onPress={handleToggleSpeedMultiplier}
+                  >
+                    <IconSymbol 
+                      name={state.session.speedMultiplierEnabled ? "checkmark.circle.fill" : "circle"} 
+                      color={state.session.speedMultiplierEnabled ? colors.primary : colors.textSecondary} 
+                      size={24} 
+                    />
+                  </TouchableOpacity>
+                </View>
                 <Text style={styles.description}>
                   How fast time should advance (higher = faster)
                 </Text>
@@ -308,9 +415,11 @@ export default function SessionScreen() {
                   {[1, 2, 4, 8].map((speed) => (
                     <TouchableOpacity
                       key={speed}
+                      disabled={!state.session.speedMultiplierEnabled}
                       style={[
                         styles.speedButton,
-                        state.session.speedSetting === speed && styles.selectedSpeedButton
+                        state.session.speedSetting === speed && styles.selectedSpeedButton,
+                        !state.session.speedMultiplierEnabled && styles.disabledButton
                       ]}
                       onPress={() => handleSpeedChange(speed)}
                     >
@@ -370,12 +479,17 @@ export default function SessionScreen() {
               </TouchableOpacity>
               
               <View style={[commonStyles.silverCard, styles.sessionInfo]}>
-                <Text style={styles.sessionInfoText}>
-                  Mode: {state.session.mode === 'speed' ? `${state.session.speedSetting}x Speed` : 'Real-Time'}
-                </Text>
-                <Text style={styles.sessionInfoText}>
-                  Slot: +{state.session.timeSlotDuration || 15}m every {state.session.slotEveryMinutes || 30}m
-                </Text>
+                <Text style={[styles.sessionInfoText, styles.sessionInfoTitle]}>Active Features:</Text>
+                {state.session.speedMultiplierEnabled && (
+                  <Text style={styles.sessionInfoText}>
+                    • Speed Multiplier: {state.session.speedSetting}x
+                  </Text>
+                )}
+                {state.session.timeSlotEnabled && (
+                  <Text style={styles.sessionInfoText}>
+                    • Time Slot: +{state.session.timeSlotDuration || 15}m every {state.session.slotEveryMinutes || 30}m
+                  </Text>
+                )}
               </View>
               
               {/* Active Sound Layers */}
@@ -658,6 +772,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 20,
   },
+  sessionInfoTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
   sessionInfoText: {
     fontSize: 16,
     color: colors.text,
@@ -721,5 +840,31 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
+  },
+  featureHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  toggleButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 2,
+    borderColor: colors.metallicSilver,
+  },
+  toggleButtonActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.highlight,
+  },
+  disabledCard: {
+    opacity: 0.7,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });

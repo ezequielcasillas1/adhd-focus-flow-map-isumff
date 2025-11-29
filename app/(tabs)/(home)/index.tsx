@@ -256,12 +256,12 @@ export default function HomeScreen() {
     Alert.alert('Coming Soon', 'Stats screen will be available soon!');
   };
 
-  const handleMasterSoundToggle = () => {
+  const handleMasterSoundToggle = async () => {
     actions.updateSounds({ master: !state.sounds.master });
     if (!state.sounds.master) {
-      soundService.initialize();
+      await soundService.initialize();
     } else {
-      soundService.forceStopAll();
+      await soundService.forceStopAll();
     }
   };
 

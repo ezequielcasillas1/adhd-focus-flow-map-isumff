@@ -138,7 +138,7 @@ export class ClockService {
     }
   }
 
-  setTimeSlotDuration(minutes: 15 | 30 | 50) {
+  setTimeSlotDuration(minutes: 0 | 15 | 30 | 50) {
     console.log('ClockService: Setting time slot duration to', minutes, 'minutes');
     this.timeSlotDuration = minutes;
     this.notifySubscribers();
@@ -250,6 +250,13 @@ export class ClockService {
     // Clear existing slot timer
     if (this.slotInterval) {
       clearInterval(this.slotInterval);
+    }
+
+    // Don't schedule slots if slotEveryMinutes is 0 (feature disabled)
+    if (this.slotEveryMinutes === 0 || this.timeSlotDuration === 0) {
+      console.log('ClockService: Time slot feature is disabled, skipping slot scheduling');
+      this.nextSlotTime = null;
+      return;
     }
 
     // Calculate when the next slot should occur

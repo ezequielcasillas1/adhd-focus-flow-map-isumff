@@ -9,10 +9,10 @@ export default function TransparentModal() {
   return (
     <Pressable style={styles.backdrop} onPress={() => router.back()}>
       <Pressable onPress={(e) => e.stopPropagation()}>
-        <GlassView style={styles.modal} glassEffectStyle="regular">
+        <BlurView style={styles.modal} glassEffectStyle="regular">
           <Text style={[styles.title, { color: theme.colors.text }]}>Transparent Modal</Text>
           <Text style={[styles.text, { color: theme.colors.text }]}>Tap outside to dismiss</Text>
-        </GlassView>
+        </BlurView>
       </Pressable>
     </Pressable>
   );

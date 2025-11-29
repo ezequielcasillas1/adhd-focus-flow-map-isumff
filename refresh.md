@@ -1,5 +1,5 @@
 {
-  **No active bugs currently tracked. All completed fixes have been moved to implementations.md and success/SuccessLog.md**
+  - **Audio stops when screen locks on TestFlight**: SoundService using MixWithOthers interruption mode instead of DoNotMix, causing iOS to stop audio on screen lock
 }
 
 ---

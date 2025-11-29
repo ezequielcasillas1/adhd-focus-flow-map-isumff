@@ -316,7 +316,7 @@ export default function HomeScreen() {
           </Text>
 
           {/* Master Sound Toggle */}
-          <GlassView style={styles.masterSoundContainer}>
+          <BlurView intensity={40} style={styles.masterSoundContainer}>
             <Text style={styles.masterSoundText}>Master Sound</Text>
             <TouchableOpacity
               style={[
@@ -332,7 +332,7 @@ export default function HomeScreen() {
                 ]}
               />
             </TouchableOpacity>
-          </GlassView>
+          </BlurView>
 
           {/* Quick Actions */}
           <View style={styles.quickActions}>

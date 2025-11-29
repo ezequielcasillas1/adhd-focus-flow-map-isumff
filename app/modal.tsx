@@ -12,9 +12,9 @@ export default function Modal() {
       <Text style={[styles.text, { color: theme.colors.text }]}>This is a modal presentation.</Text>
 
       <Pressable onPress={() => router.back()}>
-        <GlassView style={styles.button} glassEffectStyle="clear">
+        <BlurView style={styles.button} glassEffectStyle="clear">
           <Text style={[styles.buttonText, { color: theme.colors.primary }]}>Close Modal</Text>
-        </GlassView>
+        </BlurView>
       </Pressable>
     </View>
   );

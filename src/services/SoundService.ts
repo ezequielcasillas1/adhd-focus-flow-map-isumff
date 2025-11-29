@@ -240,15 +240,15 @@ export class SoundService {
   async initialize() {
     console.log('SoundService: Initializing');
     try {
-      // Configure audio for background playback and mixing with other apps
+      // Configure audio for background playback - DoNotMix ensures audio continues when screen locks
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
         staysActiveInBackground: true,
         playsInSilentModeIOS: true,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
-        interruptionModeIOS: Audio.InterruptionModeIOS.MixWithOthers,
-        interruptionModeAndroid: Audio.InterruptionModeAndroid.DuckOthers,
+        interruptionModeIOS: Audio.InterruptionModeIOS.DoNotMix, // ✅ CRITICAL: DoNotMix keeps audio playing when screen locks
+        interruptionModeAndroid: Audio.InterruptionModeAndroid.DoNotMix,
       });
       this.isInitialized = true;
       console.log('SoundService: Initialized successfully with background playback');

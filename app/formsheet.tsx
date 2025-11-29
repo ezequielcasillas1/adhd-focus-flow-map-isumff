@@ -17,9 +17,9 @@ export default function FormSheetModal() {
       <Text style={[styles.text, { color: theme.colors.text }]}>Drag the grabber to resize!</Text>
 
       <Pressable onPress={() => router.back()}>
-        <GlassView style={styles.button} glassEffectStyle="clear">
+        <BlurView style={styles.button} glassEffectStyle="clear">
           <Text style={[styles.buttonText, { color: theme.colors.primary }]}>Close Modal</Text>
-        </GlassView>
+        </BlurView>
       </Pressable>
     </View>
   );

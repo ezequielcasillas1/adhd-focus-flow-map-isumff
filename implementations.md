@@ -4,6 +4,13 @@ Completed features and implementations from request.md.
 
 ---
 
+## 2025-11-30 - TestFlight Audio Fix
+
+### 🔊 Screen Lock Audio Continuation
+**Status:** ✅ Completed
+**Files:** src/services/SoundService.ts, src/services/AudioConfig.ts
+**Details:** Fixed audio stopping when screen locks on TestFlight. Changed interruption mode from MixWithOthers to DoNotMix. This ensures iOS maintains audio session priority when device locks. Both SoundService and AudioConfig updated for consistency.
+
 ## 2025-11-28 - Sound System Critical Fix
 
 ### 🔊 Scheduled Timer Cleanup (Sounds Not Stopping)
